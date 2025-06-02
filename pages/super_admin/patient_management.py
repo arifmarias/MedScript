@@ -229,4 +229,3 @@ if __name__ == "__main__":
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for SA Patient Mgt.")
 
     show_sa_patient_management_page()
-
