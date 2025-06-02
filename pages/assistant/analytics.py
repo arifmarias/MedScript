@@ -166,4 +166,7 @@ if __name__ == "__main__":
     if not CHARTS_AVAILABLE: st.sidebar.warning("Using MOCK Chart components for Asst. Analytics.")
     # No specific session state for filters needed at this top level, handled by selectbox key
 
-    show_assistant_analytics_page()
+    # show_assistant_analytics_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_assistant_analytics_page()

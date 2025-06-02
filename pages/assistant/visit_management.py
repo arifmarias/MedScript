@@ -299,4 +299,7 @@ if __name__ == "__main__":
             if isinstance(date_str_or_obj, (datetime, py_date)): return date_str_or_obj.strftime("%Y-%m-%d")
             return "N/A"
 
-    show_visit_management_page()
+    # show_visit_management_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_visit_management_page()

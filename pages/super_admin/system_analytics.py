@@ -236,4 +236,7 @@ if __name__ == "__main__":
     if 'UserQueries' not in globals() or not hasattr(UserQueries, 'get_all_users'):
         class UserQueries: @staticmethod
         def get_all_users(): return [{'id': 'u1', 'username': 'mock_u', 'full_name': 'Mock User', 'role': 'mock_role'}]
-    show_system_analytics_page()
+    # show_system_analytics_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_system_analytics_page()

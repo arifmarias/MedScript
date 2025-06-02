@@ -562,5 +562,19 @@ def show_user_analytics():
     else:
         st.info("No recent user activity found")
 
+# This call ensures Streamlit runs the page content when navigating
+show_user_management()
+
 if __name__ == "__main__":
-    show_user_management()
+    # Mock setup or specific direct run logic can go here
+    if 'user' not in st.session_state:
+        st.session_state.user = {
+            'id': 'sa_usermgt_direct',
+            'username': 'sa_usermgt_direct',
+            'role': USER_ROLES['SUPER_ADMIN'],
+            'full_name': 'SA UserMgt Direct Runner'
+        }
+        st.session_state.authenticated = True
+        st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
+    # show_user_management() # Already called at module level
+    pass

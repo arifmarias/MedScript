@@ -630,5 +630,20 @@ def render_system_tab():
     else:
         st.success("✅ System is running optimally")
 
+# This call ensures Streamlit runs the page content when navigating
+show_super_admin_dashboard()
+
 if __name__ == "__main__":
-    show_super_admin_dashboard()
+    # Mock setup or specific direct run logic can go here
+    # For example, ensuring a mock user is set if not already by main app flow
+    if 'user' not in st.session_state:
+        st.session_state.user = {
+            'id': 'sa_dashboard_direct',
+            'username': 'sa_dash_direct',
+            'role': USER_ROLES['SUPER_ADMIN'],
+            'full_name': 'SA Dashboard Direct Runner'
+        }
+        st.session_state.authenticated = True
+        st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
+    # show_super_admin_dashboard() # Already called at module level
+    pass

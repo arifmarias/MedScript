@@ -178,4 +178,7 @@ if __name__ == "__main__":
         st.session_state.authenticated = True
         st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
 
-    show_assistant_dashboard()
+    # show_assistant_dashboard() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_assistant_dashboard()

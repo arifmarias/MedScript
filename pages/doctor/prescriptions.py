@@ -345,4 +345,7 @@ if __name__ == "__main__":
     if 'rx_lab_tests' not in st.session_state:
         st.session_state.rx_lab_tests = []
 
-    show_prescriptions_page()
+    # show_prescriptions_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_prescriptions_page()

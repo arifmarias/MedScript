@@ -331,4 +331,7 @@ if __name__ == "__main__":
     if 'duplicating_template_id' not in st.session_state: st.session_state.duplicating_template_id = None
 
     initialize_mock_db() # Populate mock DB for testing
-    show_templates_page()
+    # show_templates_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_templates_page()
