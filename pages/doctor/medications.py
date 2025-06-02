@@ -216,4 +216,7 @@ if __name__ == "__main__":
         mock_toggle_favorite_medication('med001', 'docMedBrowser') # Amoxicillin
         mock_toggle_favorite_medication('med003', 'docMedBrowser') # Lisinopril
 
-    show_medications_page()
+    # show_medications_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_medications_page()

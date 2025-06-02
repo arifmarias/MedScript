@@ -152,4 +152,7 @@ if __name__ == "__main__":
     if 'lab_search_term' not in st.session_state: st.session_state.lab_search_term = ""
     if 'lab_test_category' not in st.session_state: st.session_state.lab_test_category = "All"
 
-    show_lab_tests_page()
+    # show_lab_tests_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_lab_tests_page()

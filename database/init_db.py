@@ -868,7 +868,7 @@ def check_and_initialize_database():
                 st.info("Database incomplete. Reinitializing...")
                 return initialize_database()
             else:
-                st.success("Database found and ready!")
+                # st.success("Database found and ready!") # Line removed/commented
                 return True
                 
     except Exception as e:

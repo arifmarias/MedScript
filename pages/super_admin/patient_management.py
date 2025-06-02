@@ -228,4 +228,7 @@ if __name__ == "__main__":
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components for SA Patient Mgt.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for SA Patient Mgt.")
 
-    show_sa_patient_management_page()
+    # show_sa_patient_management_page() # Called at module level now
+
+# This call ensures Streamlit runs the page content when navigating
+show_sa_patient_management_page()
