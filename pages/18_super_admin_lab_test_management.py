@@ -17,12 +17,12 @@ try:
 except ImportError:
     COMPONENTS_AVAILABLE = False
     # Mock SearchFormComponent
-    class SearchFormComponent:
+    class SearchFormComponent: 
         def __init__(self, search_function=None,result_key_prefix=None,form_key=None,placeholder="Search...",label="Search",session_state_key="default_search_term",auto_submit=False,button_text="Search"):
             self.placeholder, self.label, self.session_state_key = placeholder, label, session_state_key
-        def render(self):
+        def render(self): 
             st.session_state[self.session_state_key] = st.text_input(self.label, value=st.session_state.get(self.session_state_key, ""), placeholder=self.placeholder, key=f"mock_search_sa_lab_mgt_{self.session_state_key}_v2") # Key updated
-            return None
+            return None 
         def get_search_query(self): return st.session_state.get(self.session_state_key, "")
 
     # Define LabTestFormComponent inline as requested if not available
@@ -40,16 +40,16 @@ except ImportError:
                 form_data = {}
                 form_data['name'] = st.text_input("Test Name*", value=self.test_data.get('name', ''), key=f"{self.key_prefix}_name_v2") # Key updated
                 form_data['test_code'] = st.text_input("Test Code (e.g., CPT/LOINC)*", value=self.test_data.get('test_code', ''), key=f"{self.key_prefix}_code_v2") # Key updated
-
+                
                 default_categories = ["Hematology", "Chemistry", "Microbiology", "Endocrinology", "Other"]
                 available_categories = LAB_TEST_CONFIG.get('CATEGORIES', default_categories)
                 if not isinstance(available_categories, list) or not available_categories: available_categories = default_categories
-
+                
                 current_category_idx = 0
                 if self.test_data.get('category') in available_categories:
                     current_category_idx = available_categories.index(self.test_data['category'])
                 form_data['category'] = st.selectbox("Category*", options=available_categories, index=current_category_idx, key=f"{self.key_prefix}_cat_v2") # Key updated
-
+                
                 form_data['sample_type'] = st.text_input("Sample Type (e.g., Blood, Urine, Serum)*", value=self.test_data.get('sample_type', ''), key=f"{self.key_prefix}_sample_v2") # Key updated
                 form_data['normal_range'] = st.text_area("Normal Range", value=self.test_data.get('normal_range', ''), key=f"{self.key_prefix}_range_v2") # Key updated
                 form_data['units'] = st.text_input("Units", value=self.test_data.get('units', ''), key=f"{self.key_prefix}_units_v2") # Key updated
@@ -70,7 +70,7 @@ except ImportError:
             return submitted_data
 
     # Mock LabTestCard
-    def LabTestCard(lab_test_data, actions, key, show_actions=True):
+    def LabTestCard(lab_test_data, actions, key, show_actions=True): 
         status = "Active" if lab_test_data.get('is_active', True) else "Inactive"
         st.markdown(f"**{lab_test_data.get('name', 'N/A')} ({lab_test_data.get('test_code', 'N/A')})** - {status}")
         st.caption(f"Category: {lab_test_data.get('category', 'N/A')} | Sample: {lab_test_data.get('sample_type', 'N/A')}")
@@ -99,7 +99,7 @@ except ImportError:
             if is_active is not None: results = [lt for lt in results if lt.get('is_active') == is_active]
             return sorted(results, key=lambda x: x['name'])
         @staticmethod
-        def get_lab_test_details(lab_test_id):
+        def get_lab_test_details(lab_test_id): 
             return next((copy.deepcopy(lt) for lt in MOCK_LAB_TESTS_DB_SA if lt['id'] == lab_test_id), None)
         @staticmethod
         def create_lab_test(data, created_by_id):
@@ -180,7 +180,7 @@ def render_sa_manage_lab_tests_tab(admin_user: dict):
         cats_list = LAB_TEST_CONFIG.get('CATEGORIES', default_cats)
         if not isinstance(cats_list, list) or not cats_list: cats_list = default_cats
         all_cats_options = ["All"] + sorted(list(set(cats_list)))
-
+        
         current_cat_filter = st.session_state.get('sa_lab_test_category_filter_v2', "All") # Key updated
         if current_cat_filter not in all_cats_options: current_cat_filter = "All"
         st.session_state.sa_lab_test_category_filter_v2 = st.selectbox("Filter by Category:", options=all_cats_options, index=all_cats_options.index(current_cat_filter), key="sa_lab_cat_filter_dd_v2") # Key updated
@@ -188,25 +188,25 @@ def render_sa_manage_lab_tests_tab(admin_user: dict):
         status_options = {"All": None, "Active": True, "Inactive": False}
         current_status_label = st.session_state.get('sa_lab_test_status_filter_label_v2', "All") # Key updated
         st.session_state.sa_lab_test_status_filter_label_v2 = st.radio("Filter by Status:", options=list(status_options.keys()), index=list(status_options.keys()).index(current_status_label), horizontal=True, key="sa_lab_status_radio_v2") # Key updated
-
+    
     if st.button("🔍 Apply Filters / Search", key="sa_apply_lab_filters_btn_v2"): st.rerun() # Key updated
 
     lab_tests_list_data = []
-    try:
+    try: 
         is_active_val = status_options[st.session_state.sa_lab_test_status_filter_label_v2] # Key updated
         lab_tests_list_data = LabTestQueries.search_lab_tests(search_term=search_query, category=st.session_state.sa_lab_test_category_filter_v2, is_active=is_active_val) # Key updated
     except Exception as e: show_error_message(f"Error: {e}")
-
+    
     st.caption(f"Displaying {len(lab_tests_list_data)} lab test(s).")
     if not lab_tests_list_data and (search_query or st.session_state.sa_lab_test_category_filter_v2 != "All" or st.session_state.sa_lab_test_status_filter_label_v2 != "All"): # Keys updated for filters
         st.info("No lab tests found matching current filters.")
-
+    
     for lt_item_data in lab_tests_list_data:
-        def edit_lt_action_fn(lt_data_item=lt_item_data):
+        def edit_lt_action_fn(lt_data_item=lt_item_data): 
             st.session_state.sa_editing_lab_test_id_v2 = lt_data_item['id'] # Key updated
             st.session_state.sa_lab_test_form_data_v2 = LabTestQueries.get_lab_test_details(lt_data_item['id']) or lt_data_item # Key updated
             st.session_state.active_sa_lab_test_management_tab_v2 = "Add/Edit Lab Test"; st.rerun() # Key updated
-
+        
         def toggle_lt_status_action_fn(lt_id_val=lt_item_data['id'], current_active_status=lt_item_data.get('is_active', True)):
             handle_sa_toggle_lab_test_status(lt_id_val, current_active_status, admin_user['id'])
 
@@ -242,21 +242,21 @@ def show_sa_lab_test_management_page():
     require_role_access([USER_ROLES['SUPER_ADMIN']])
     inject_css()
     st.markdown("<h1>🧪 Lab Test Database Management (Admin)</h1>", unsafe_allow_html=True)
-
+    
     admin = get_current_user()
     if not admin: show_error_message("Admin user data not found."); return
 
     # Initialize session state keys with _v2 suffix
     for key, default_val in [('sa_editing_lab_test_id_v2', None), ('sa_lab_test_form_data_v2', {}),
                              ('sa_lab_test_search_term_v2', ""), ('sa_lab_test_category_filter_v2', "All"),
-                             ('sa_lab_test_status_filter_label_v2', "All"),
+                             ('sa_lab_test_status_filter_label_v2', "All"), 
                              ('active_sa_lab_test_management_tab_v2', "Manage Lab Tests")]:
         if key not in st.session_state: st.session_state[key] = default_val
-
+    
     tab_titles_list = ["Manage Lab Tests", "Add/Edit Lab Test"]
     if st.session_state.sa_editing_lab_test_id_v2:  # Key updated
         st.session_state.active_sa_lab_test_management_tab_v2 = tab_titles_list[1] # Key updated
-
+    
     tabs_obj_list = st.tabs(tab_titles_list)
     with tabs_obj_list[0]: render_sa_manage_lab_tests_tab(admin)
     with tabs_obj_list[1]: render_sa_add_edit_lab_test_tab(admin)
@@ -268,10 +268,10 @@ if __name__ == "__main__":
 
     for key, default_val in [('sa_editing_lab_test_id_v2', None), ('sa_lab_test_form_data_v2', {}),
                              ('sa_lab_test_search_term_v2', ""), ('sa_lab_test_category_filter_v2', "All"),
-                             ('sa_lab_test_status_filter_label_v2', "All"),
+                             ('sa_lab_test_status_filter_label_v2', "All"), 
                              ('active_sa_lab_test_management_tab_v2', "Manage Lab Tests")]: # Key updated
         if key not in st.session_state: st.session_state[key] = default_val
-
+    
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components for SA Lab Test Mgt.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for SA Lab Test Mgt.")
 

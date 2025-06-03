@@ -33,11 +33,11 @@ except ImportError:
         # For example, get_user_registration_summary, get_prescription_creation_summary etc.
 
 try:
-    from database.queries import AnalyticsQueries, DashboardQueries, UserQueries
-    if not hasattr(UserQueries, 'get_all_users'):
-        class MockUserQueriesForSA:
+    from database.queries import AnalyticsQueries, DashboardQueries, UserQueries 
+    if not hasattr(UserQueries, 'get_all_users'): 
+        class MockUserQueriesForSA: 
             @staticmethod
-            def get_all_users():
+            def get_all_users(): 
                 return [
                     {'id': 'user001', 'username': 'doc_john', 'full_name': 'Dr. John Doe', 'role': USER_ROLES['DOCTOR']},
                     {'id': 'user002', 'username': 'asst_jane', 'full_name': 'Jane Assist', 'role': USER_ROLES['ASSISTANT']},
@@ -45,16 +45,16 @@ try:
                 ]
         UserQueries.get_all_users = MockUserQueriesForSA.get_all_users # Patch it if missing
 except ImportError:
-    class UserQueries:
+    class UserQueries: 
             @staticmethod
-            def get_all_users():
+            def get_all_users(): 
                 return [
                     {'id': 'user001', 'username': 'doc_john', 'full_name': 'Dr. John Doe', 'role': USER_ROLES['DOCTOR']},
                     {'id': 'user002', 'username': 'asst_jane', 'full_name': 'Jane Assist', 'role': USER_ROLES['ASSISTANT']},
                     {'id': 'user003', 'username': 'sa_prime', 'full_name': 'Super Admin Prime', 'role': USER_ROLES['SUPER_ADMIN']},
                 ]
 
-    class AnalyticsQueries:
+    class AnalyticsQueries: 
         @staticmethod
         def get_entity_counts():
             # st.warning("AnalyticsQueries (get_entity_counts) not found. Using mock counts.", icon="⚠️")
@@ -77,7 +77,7 @@ except ImportError:
             users = UserQueries.get_all_users() # Use the (potentially patched) UserQueries
             actions = ['login', 'create_patient', 'update_patient', 'create_prescription', 'view_analytics', 'error_occurred']
             entities = ['patient_XYZ', 'prescription_ABC', 'analytics_dash', 'system_log', None]
-            for _ in range(limit * 2):
+            for _ in range(limit * 2): 
                 user = random.choice(users)
                 act = random.choice(actions)
                 activities.append({'timestamp': base_time - timedelta(minutes=random.randint(0, days_back * 1440)),
@@ -90,7 +90,7 @@ except ImportError:
             activities.sort(key=lambda x: x['timestamp'], reverse=True)
             return pd.DataFrame(activities[:limit])
         @staticmethod
-        def get_table_row_counts():
+        def get_table_row_counts(): 
             return {'patients': 1234, 'visits': 6789, 'prescriptions': 3456, 'users': 167, 'medications': 289, 'lab_tests': 123}
     class DashboardQueries: pass
 
@@ -186,10 +186,10 @@ def render_system_health_tab(days_filter):
         h_cols[0].metric("Error Rate (24h)", f"{health.get('error_rate_last_24h', 0):.2f}%")
         h_cols[1].metric("Active Users (24h)", health.get('active_users_last_24h', 'N/A'))
         h_cols[2].metric("Avg. Response (ms)", f"{health.get('avg_response_time_ms', 0)}")
-
+        
         err_timeline = health.get('error_rate_timeline')
         if isinstance(err_timeline, pd.DataFrame) and not err_timeline.empty: TimeSeriesChart(err_timeline, title=f"Error Rate Over Last {days_filter} Days", x='date', y='error_rate_percent')
-
+        
         st.markdown("##### Recent Error Logs (Simulated)"); errors = AnalyticsQueries.get_user_activity(days_back=days_filter, action_type='error_occurred', limit=10)
         if not errors.empty:
             errors_disp = errors.copy(); errors_disp['timestamp'] = errors_disp['timestamp'].apply(lambda x: f"{format_date_display(x)} ({get_time_ago(x)})")
@@ -203,7 +203,7 @@ def render_database_stats_tab():
         db_m = AnalyticsService().get_system_performance_metrics() # Mock includes DB stats
         db_cols = st.columns(3)
         db_cols[0].metric("DB Size", f"{db_m.get('db_size_mb', 0):.2f} MB"); db_cols[1].metric("Total Tables", db_m.get('db_table_count', 'N/A')); db_cols[2].metric("Total Records (Est.)", f"{db_m.get('db_total_records', 0):,}")
-
+        
         st.markdown("##### Table Row Counts (Simulated)"); tbl_counts = AnalyticsQueries.get_table_row_counts()
         if tbl_counts: df_tbls = pd.DataFrame(list(tbl_counts.items()), columns=['Table', 'Rows']); BarChart(df_tbls, title="Rows per Table", x_axis='Table', y_axis='Rows')
         else: st.info("Could not get table counts.")
@@ -216,7 +216,7 @@ def show_system_analytics_page():
 
     top_cols = st.columns([3,1])
     days_filter = top_cols[0].selectbox("Global Time Period:", options=[7,15,30,60,90], format_func=lambda x:f"Last {x}d", index=1, key="sa_analytics_global_days_v2")
-    top_cols[1].markdown("<div>&nbsp;</div>", unsafe_allow_html=True);
+    top_cols[1].markdown("<div>&nbsp;</div>", unsafe_allow_html=True); 
     if top_cols[1].button("🔄 Refresh", key="sa_refresh_all_v2", use_container_width=True): st.rerun()
     st.markdown("---")
 

@@ -376,13 +376,7 @@ def can_use_ai_features() -> bool:
     return PermissionChecker.has_permission(Permission.USE_AI_ANALYSIS)
 
 def get_allowed_navigation_items() -> List[Dict[str, Any]]:
-    """
-    Get navigation items allowed for current user
-    
-    Returns:
-        List[Dict[str, Any]]: List of allowed navigation items
-    """
-    from auth.authentication import get_current_user_role
+    from auth.authentication import get_current_user_role # Already there
     
     user_role = get_current_user_role()
     if not user_role:
@@ -390,41 +384,36 @@ def get_allowed_navigation_items() -> List[Dict[str, Any]]:
     
     navigation_items = []
     
-    # Dashboard is available to all authenticated users
-    navigation_items.append({
-        'label': '📊 Dashboard',
-        'key': 'dashboard',
-        'icon': '📊'
-    })
-    
-    # Role-specific navigation
     if user_role == USER_ROLES['SUPER_ADMIN']:
-        navigation_items.extend([
-            {'label': '👥 User Management', 'key': 'user_management', 'icon': '👥'},
-            {'label': '🏥 Patient Management', 'key': 'patient_management', 'icon': '🏥'},
-            {'label': '💊 Medication Database', 'key': 'medication_management', 'icon': '💊'},
-            {'label': '🧪 Lab Test Database', 'key': 'lab_test_management', 'icon': '🧪'},
-            {'label': '📈 System Analytics', 'key': 'system_analytics', 'icon': '📈'}
-        ])
+        navigation_items = [
+            {'label': '📊 SA Dashboard', 'icon': '📊', 'path': 'pages/14_super_admin_dashboard.py'},
+            {'label': '👥 User Management', 'icon': '👥', 'path': 'pages/15_super_admin_user_management.py'},
+            {'label': '🏥 Patient Management (SA)', 'icon': '🏥', 'path': 'pages/16_super_admin_patient_management.py'},
+            {'label': '💊 Medication DB (SA)', 'icon': '💊', 'path': 'pages/17_super_admin_medication_management.py'},
+            {'label': '🧪 Lab Test DB (SA)', 'icon': '🧪', 'path': 'pages/18_super_admin_lab_test_management.py'},
+            {'label': '📈 System Analytics', 'icon': '📈', 'path': 'pages/19_super_admin_system_analytics.py'}
+        ]
     
     elif user_role == USER_ROLES['DOCTOR']:
-        navigation_items.extend([
-            {'label': '👥 Today\'s Patients', 'key': 'todays_patients', 'icon': '👥'},
-            {'label': '📝 Prescriptions', 'key': 'prescriptions', 'icon': '📝'},
-            {'label': '📋 Templates', 'key': 'templates', 'icon': '📋'},
-            {'label': '💊 Medications', 'key': 'medications', 'icon': '💊'},
-            {'label': '🧪 Lab Tests', 'key': 'lab_tests', 'icon': '🧪'},
-            {'label': '📊 Analytics', 'key': 'analytics', 'icon': '📊'}
-        ])
+        navigation_items = [
+            {'label': '📊 Doctor Dashboard', 'icon': '📊', 'path': 'pages/1_doctor_dashboard.py'},
+            {'label': '👥 Today\'s Patients', 'icon': '👥', 'path': 'pages/2_doctor_todays_patients.py'},
+            {'label': '📝 Prescriptions', 'icon': '📝', 'path': 'pages/3_doctor_prescriptions.py'},
+            {'label': '📋 Templates', 'icon': '📋', 'path': 'pages/4_doctor_templates.py'},
+            {'label': '💊 Medications', 'icon': '💊', 'path': 'pages/5_doctor_medications.py'},
+            {'label': '🧪 Lab Tests', 'icon': '🧪', 'path': 'pages/6_doctor_lab_tests.py'},
+            {'label': '📈 My Analytics', 'icon': '📈', 'path': 'pages/7_doctor_analytics.py'}
+        ]
     
     elif user_role == USER_ROLES['ASSISTANT']:
-        navigation_items.extend([
-            {'label': '🏥 Patient Management', 'key': 'patient_management', 'icon': '🏥'},
-            {'label': '📅 Visit Management', 'key': 'visit_management', 'icon': '📅'},
-            {'label': '💊 Medications', 'key': 'medications', 'icon': '💊'},
-            {'label': '🧪 Lab Tests', 'key': 'lab_tests', 'icon': '🧪'},
-            {'label': '📈 My Activity', 'key': 'analytics', 'icon': '📈'}
-        ])
+        navigation_items = [
+            {'label': '📊 Assistant Dashboard', 'icon': '📊', 'path': 'pages/8_assistant_dashboard.py'},
+            {'label': '🏥 Patient Management', 'icon': '🏥', 'path': 'pages/9_assistant_patient_management.py'},
+            {'label': '📅 Visit Management', 'icon': '📅', 'path': 'pages/10_assistant_visit_management.py'},
+            {'label': '💊 Medications (View)', 'icon': '💊', 'path': 'pages/11_assistant_medications.py'},
+            {'label': '🧪 Lab Tests (View)', 'icon': '🧪', 'path': 'pages/12_assistant_lab_tests.py'},
+            {'label': '📈 My Activity', 'icon': '📈', 'path': 'pages/13_assistant_analytics.py'}
+        ]
     
     return navigation_items
 

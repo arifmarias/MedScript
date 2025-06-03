@@ -65,12 +65,12 @@ except ImportError:
             start_date = datetime.now() - timedelta(days=days_back)
             filtered = [v for v in filtered if datetime.fromisoformat(v['visit_date']) >= start_date]
             return len(filtered)
-
+        
         @staticmethod
         def get_all_today_visits(): # All visits scheduled for today, regardless of who recorded
             today_str = datetime.now().date().isoformat()
             return len([v for v in MOCK_ASSISTANT_VISITS_DB if v['visit_date'].startswith(today_str)])
-
+    
     class DashboardQueries: pass # Placeholder
 
 # Utils
@@ -94,15 +94,15 @@ def render_assistant_dashboard_content(current_user: dict):
         st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True) # Spacer for better alignment
         if st.button("🔄 Refresh Data", key="refresh_assistant_dash_main", use_container_width=True):
             st.rerun()
-
+    
     st.markdown("---")
 
     # --- Key Metrics ---
     st.markdown("<h4>Key Metrics</h4>", unsafe_allow_html=True)
-
+    
     patients_registered_by_me = 0
     visits_recorded_by_me = 0
-
+    
     try: # Try AnalyticsService first
         analytics_service = AnalyticsService()
         assistant_metrics = analytics_service.get_dashboard_metrics(
@@ -131,9 +131,9 @@ def render_assistant_dashboard_content(current_user: dict):
     m_cols[1].metric(label=f"Visits Recorded (Last {days_back_filter}d)", value=visits_recorded_by_me)
     m_cols[2].metric(label="Total Patients You Manage", value=total_patients_managed)
     m_cols[3].metric(label="Upcoming Appointments Today (All)", value=upcoming_appointments_today)
-
+    
     st.markdown("---")
-
+    
     # --- Quick Actions ---
     st.subheader("🚀 Quick Actions")
     qa_cols = st.columns(2)
@@ -143,7 +143,7 @@ def render_assistant_dashboard_content(current_user: dict):
     if qa_cols[1].button("➕ Record New Visit", use_container_width=True, type="primary"):
         st.toast("Action: Navigate to Record Visit (Simulated).")
         # Replace with: st.switch_page("pages/assistant/record_visit.py") when available
-
+            
     st.markdown("---")
     st.info("Recent activity and task list sections will be available soon.")
 
@@ -151,13 +151,13 @@ def render_assistant_dashboard_content(current_user: dict):
 # --- Main Page Function ---
 def show_assistant_dashboard():
     require_authentication()
-    require_role_access([USER_ROLES['ASSISTANT']])
-
-    inject_css()
-    # inject_component_css('DASHBOARD_CARDS')
+    require_role_access([USER_ROLES['ASSISTANT']]) 
+    
+    inject_css() 
+    # inject_component_css('DASHBOARD_CARDS') 
 
     st.markdown("<h1>💁‍♀️ Assistant Dashboard</h1>", unsafe_allow_html=True)
-
+    
     current_user = get_current_user()
     if current_user:
         st.sidebar.success(f"Welcome, {current_user.get('full_name', 'Assistant')}!")
@@ -169,15 +169,15 @@ def show_assistant_dashboard():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'assistant123',
-            'username': 'med_assistant_jane',
-            'role': USER_ROLES['ASSISTANT'],
+            'id': 'assistant123', 
+            'username': 'med_assistant_jane', 
+            'role': USER_ROLES['ASSISTANT'], 
             'full_name': 'Jane Doe (Assistant)',
             'email': 'jane.assistant@example.com'
         }
         st.session_state.authenticated = True
         st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
-
+    
     # show_assistant_dashboard() # Called at module level now
 
 # This call ensures Streamlit runs the page content when navigating

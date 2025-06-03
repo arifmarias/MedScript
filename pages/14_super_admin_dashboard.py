@@ -638,9 +638,9 @@ if __name__ == "__main__":
     # For example, ensuring a mock user is set if not already by main app flow
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'sa_dashboard_direct',
-            'username': 'sa_dash_direct',
-            'role': USER_ROLES['SUPER_ADMIN'],
+            'id': 'sa_dashboard_direct', 
+            'username': 'sa_dash_direct', 
+            'role': USER_ROLES['SUPER_ADMIN'], 
             'full_name': 'SA Dashboard Direct Runner'
         }
         st.session_state.authenticated = True
