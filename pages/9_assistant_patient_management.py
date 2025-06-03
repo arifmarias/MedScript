@@ -17,19 +17,19 @@ except ImportError:
     # Mock SearchFormComponent
     class SearchFormComponent:
         def __init__(self, search_function=None, result_key_prefix=None, form_key=None, placeholder="Search...", label="Search", session_state_key="default_search_term", auto_submit=False, button_text="Search"):
-            self.search_function = search_function 
+            self.search_function = search_function
             self.placeholder = placeholder
             self.label = label
             self.session_state_key = session_state_key
             self.auto_submit = auto_submit # Not used in this simple mock
             self.button_text = button_text # Not used in this simple mock
 
-        def render(self): 
-            st.session_state[self.session_state_key] = st.text_input(self.label, 
-                                                                    value=st.session_state.get(self.session_state_key, ""), 
+        def render(self):
+            st.session_state[self.session_state_key] = st.text_input(self.label,
+                                                                    value=st.session_state.get(self.session_state_key, ""),
                                                                     placeholder=self.placeholder,
                                                                     key=f"mock_search_ssf_{self.session_state_key}")
-            return None 
+            return None
         def get_search_query(self):
              return st.session_state.get(self.session_state_key, "")
 
@@ -49,7 +49,7 @@ except ImportError:
                 form_data = {}
                 form_data['first_name'] = st.text_input("First Name*", value=self.patient_data.get('first_name', ''), key=f"{self.key_prefix}_fname_main")
                 form_data['last_name'] = st.text_input("Last Name*", value=self.patient_data.get('last_name', ''), key=f"{self.key_prefix}_lname_main")
-                
+
                 dob_val = self.patient_data.get('dob')
                 if isinstance(dob_val, str):
                     try: dob_val = datetime.strptime(dob_val, '%Y-%m-%d').date()
@@ -66,7 +66,7 @@ except ImportError:
                 form_data['allergies'] = st.text_area("Allergies", value=self.patient_data.get('allergies', ''), key=f"{self.key_prefix}_allergies_main")
                 form_data['medical_history'] = st.text_area("Medical History Summary", value=self.patient_data.get('medical_history', ''), key=f"{self.key_prefix}_medhist_main")
 
-                
+
                 submit_btn_label = "Update Patient" if self.edit_mode else "Register Patient"
                 col1, col2 = st.columns([3,1])
                 with col1:
@@ -87,7 +87,7 @@ except ImportError:
 try:
     from components.cards import PatientCard
 except ImportError:
-    def PatientCard(patient_data, actions, key): 
+    def PatientCard(patient_data, actions, key):
         st.markdown(f"**{patient_data.get('first_name', 'N/A')} {patient_data.get('last_name', 'N/A')}** (ID: {patient_data.get('id', 'N/A')})")
         st.caption(f"DOB: {patient_data.get('dob', 'N/A')}, Phone: {patient_data.get('phone_number', 'N/A')}")
         for action_label, action_func in actions.items():
@@ -142,7 +142,7 @@ def handle_create_patient(data, assistant_id):
         new_patient = PatientQueries.create_patient(data, created_by_id=assistant_id)
         if new_patient:
             show_success_message(f"Patient {new_patient['first_name']} {new_patient['last_name']} registered (ID: {new_patient['id']}).")
-            st.session_state.patient_form_data = {} 
+            st.session_state.patient_form_data = {}
         else: show_error_message("Failed to register patient.")
     except Exception as e: show_error_message(f"Error: {e}")
 
@@ -151,10 +151,10 @@ def handle_update_patient(patient_id, data, assistant_id):
         updated_patient = PatientQueries.update_patient(patient_id, data, updated_by_id=assistant_id)
         if updated_patient:
             show_success_message(f"Patient {updated_patient['first_name']} {updated_patient['last_name']} updated.")
-            st.session_state.editing_patient_id = None 
+            st.session_state.editing_patient_id = None
             st.session_state.patient_form_data = {}
             st.session_state.active_patient_management_tab_key = "Search & Manage Patients" # Request tab switch
-            st.rerun() 
+            st.rerun()
         else: show_error_message("Failed to update patient.")
     except Exception as e: show_error_message(f"Error: {e}")
 
@@ -163,15 +163,15 @@ def render_search_manage_patients_tab(assistant: dict):
     # Note: SearchFormComponent mock directly uses session_state.patient_search_term_main
     search_form = SearchFormComponent(session_state_key="patient_search_term_main", label="Search by Name, ID, or Phone:")
     search_form.render()
-    
+
     search_term_val = st.session_state.get("patient_search_term_main", "")
 
     if st.button("🔍 Search Patients", key="search_patients_btn_main"):
         perform_search = True
     elif not search_term_val: # If no search term, show all managed by assistant by default
-        perform_search = True 
+        perform_search = True
     else: # Only search if term exists (button not strictly needed if we want live search, but good for explicit action)
-        perform_search = False 
+        perform_search = False
 
     patients_list = []
     if perform_search or search_term_val: # Search if button clicked OR if there's a search term already
@@ -179,7 +179,7 @@ def render_search_manage_patients_tab(assistant: dict):
             patients_list = PatientQueries.search_patients(search_term=search_term_val, created_by=assistant['id'])
         except Exception as e:
             show_error_message(f"Error searching: {e}")
-    
+
     if not patients_list and (perform_search or search_term_val):
         st.info(f"No patients found matching '{search_term_val}' that you manage.")
     elif not patients_list and not search_term_val :
@@ -187,11 +187,11 @@ def render_search_manage_patients_tab(assistant: dict):
 
 
     for patient_item in patients_list:
-        def edit_action_fn(p_data=patient_item): 
+        def edit_action_fn(p_data=patient_item):
             st.session_state.editing_patient_id = p_data['id']
             full_details = PatientQueries.get_patient_details(p_data['id'])
             st.session_state.patient_form_data = full_details if full_details else p_data
-            st.session_state.active_patient_management_tab_key = "Register / Edit Patient" 
+            st.session_state.active_patient_management_tab_key = "Register / Edit Patient"
             st.rerun()
 
         PatientCard(patient_data=patient_item, actions={"Edit Details": edit_action_fn}, key=f"pat_card_{patient_item['id']}")
@@ -199,14 +199,14 @@ def render_search_manage_patients_tab(assistant: dict):
 
 def render_register_edit_patient_tab(assistant: dict):
     edit_mode_flag = st.session_state.editing_patient_id is not None
-    
+
     header_txt = f"Edit Patient: {st.session_state.patient_form_data.get('first_name', '')} {st.session_state.patient_form_data.get('last_name', '')}" if edit_mode_flag else "Register New Patient"
     st.subheader(header_txt)
 
     patient_form_component = PatientFormComponent(
-        edit_mode=edit_mode_flag, 
+        edit_mode=edit_mode_flag,
         patient_data=st.session_state.patient_form_data,
-        key_prefix="main_pat_form" 
+        key_prefix="main_pat_form"
     )
     submitted_form_data = patient_form_component.render()
 
@@ -219,13 +219,13 @@ def render_register_edit_patient_tab(assistant: dict):
             st.rerun()
         elif edit_mode_flag:
             handle_update_patient(st.session_state.editing_patient_id, submitted_form_data, assistant['id'])
-        else: 
+        else:
             handle_create_patient(submitted_form_data, assistant['id'])
             # Form data is cleared within handle_create_patient. To switch tab:
             # st.session_state.active_patient_management_tab_key = "Search & Manage Patients"; st.rerun()
 
     # "Cancel Edit" button if in edit mode and form hasn't been submitted for cancellation yet
-    if edit_mode_flag and not submitted_form_data: 
+    if edit_mode_flag and not submitted_form_data:
         if st.button("Cancel Edit Mode", key="cancel_edit_mode_btn_main"):
             st.session_state.editing_patient_id = None
             st.session_state.patient_form_data = {}
@@ -237,7 +237,7 @@ def show_patient_management_page():
     require_role_access([USER_ROLES['ASSISTANT']])
     inject_css()
     st.markdown("<h1>👤 Patient Management</h1>", unsafe_allow_html=True)
-    
+
     current_user = get_current_user()
     if not current_user:
         show_error_message("Assistant user data not found."); return
@@ -245,23 +245,23 @@ def show_patient_management_page():
     if 'editing_patient_id' not in st.session_state: st.session_state.editing_patient_id = None
     if 'patient_form_data' not in st.session_state: st.session_state.patient_form_data = {}
     if 'patient_search_term_main' not in st.session_state: st.session_state.patient_search_term_main = "" # Specific key for search
-    if 'active_patient_management_tab_key' not in st.session_state: 
+    if 'active_patient_management_tab_key' not in st.session_state:
         st.session_state.active_patient_management_tab_key = "Search & Manage Patients"
 
     tab_titles_list = ["Search & Manage Patients", "Register / Edit Patient"]
-    
+
     # Determine default tab based on state
     if st.session_state.editing_patient_id: # If editing, force to second tab
         st.session_state.active_patient_management_tab_key = tab_titles_list[1]
-    
+
     # Create tabs. Streamlit's default tab is always the first unless keys change or it's handled differently.
     # The programmatic switch is tricky. Best user experience is often to let user click.
     # Forcing tab switch on action (like 'Edit') is done by st.rerun() after setting state.
-    
+
     # Use a non-persisted variable for default_index for st.tabs if needed, but st.tabs doesn't have it.
     # Instead, we rely on the fact that when "Edit" is clicked, a rerun happens,
     # and the content of the "Register / Edit Patient" tab will reflect the edit mode.
-    
+
     tab1, tab2 = st.tabs(tab_titles_list)
 
     with tab1:
@@ -273,7 +273,7 @@ def show_patient_management_page():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'assistant123', 'username': 'med_assistant_jane', 
+            'id': 'assistant123', 'username': 'med_assistant_jane',
             'role': USER_ROLES['ASSISTANT'], 'full_name': 'Jane Doe (Assistant)',
             'email': 'jane.assistant@example.com'}
         st.session_state.authenticated = True
@@ -282,9 +282,9 @@ if __name__ == "__main__":
     if 'editing_patient_id' not in st.session_state: st.session_state.editing_patient_id = None
     if 'patient_form_data' not in st.session_state: st.session_state.patient_form_data = {}
     if 'patient_search_term_main' not in st.session_state: st.session_state.patient_search_term_main = ""
-    if 'active_patient_management_tab_key' not in st.session_state: 
+    if 'active_patient_management_tab_key' not in st.session_state:
         st.session_state.active_patient_management_tab_key = "Search & Manage Patients"
-    
+
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries.")
 

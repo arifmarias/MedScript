@@ -30,7 +30,7 @@ except ImportError:
         def get_patient_analytics(self, role, user_id, days_back): # For patients this doctor interacted with
             st.warning("AnalyticsService not found. Using mock patient analytics.")
             return {
-                'patient_demographics': pd.DataFrame({ 
+                'patient_demographics': pd.DataFrame({
                     'age_group': ['0-18', '19-35', '36-50', '51-65', '65+'],
                     'count': [max(0, int(days_back/10 + i*2 - (i%2)*5)) for i in range(5)] # Data varies with days_back
                 }),
@@ -38,9 +38,9 @@ except ImportError:
                     'gender': ['Male', 'Female', 'Other', 'Prefer not to say'],
                     'count': [max(0,int(days_back/5 + i*3)) for i in range(4)]
                 }),
-                'new_vs_returning_patients': {'new': max(0,int(days_back/3)), 'returning': max(0,int(days_back*2/3))} 
+                'new_vs_returning_patients': {'new': max(0,int(days_back/3)), 'returning': max(0,int(days_back*2/3))}
             }
-        def get_medication_analytics(self, role, user_id, days_back): 
+        def get_medication_analytics(self, role, user_id, days_back):
             st.warning("AnalyticsService not found. Using mock medication analytics.")
             med_names = ['Amoxicillin', 'Lisinopril', 'Metformin', 'Paracetamol', 'Salbutamol', 'Aspirin', 'Omeprazole']
             return {
@@ -56,10 +56,10 @@ except ImportError:
 
 try:
     from components.charts import (
-        PrescriptionTrendChart, 
-        PatientDemographicsChart, 
+        PrescriptionTrendChart,
+        PatientDemographicsChart,
         MedicationUsageChart,
-        AnalyticsDashboard 
+        AnalyticsDashboard
     )
     # If AnalyticsDashboard exists, we might prefer it.
     # For this example, we'll assume individual charts are primary.
@@ -84,8 +84,8 @@ except ImportError:
     PrescriptionTrendChart = create_mock_chart_component("Prescription Trend Chart")
     PatientDemographicsChart = create_mock_chart_component("Patient Demographics Chart")
     MedicationUsageChart = create_mock_chart_component("Medication Usage Chart")
-    
-    class AnalyticsDashboard: 
+
+    class AnalyticsDashboard:
         def __init__(self, data=None, title=None):
             self.data = data
             self.title = title
@@ -114,10 +114,10 @@ def render_analytics_content(doctor: dict):
             index=1 # Default to 30 days
         )
     with col2:
-        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True) 
+        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True)
         if st.button("🔄 Refresh Data", key="refresh_analytics_main", use_container_width=True):
             st.rerun()
-    
+
     st.markdown("---")
 
     try:
@@ -131,16 +131,16 @@ def render_analytics_content(doctor: dict):
 
     # --- Display Charts ---
     # Using individual charts for now.
-    
+
     st.header("Prescription Analytics")
     if prescription_analytics:
         total_rx = prescription_analytics.get('total_prescriptions', 0)
         avg_meds = prescription_analytics.get('average_meds_per_prescription', 0.0)
-        
+
         kpi_cols_rx = st.columns(2)
         kpi_cols_rx[0].metric(label="Total Prescriptions Issued", value=total_rx if total_rx is not None else "N/A")
         kpi_cols_rx[1].metric(label="Avg. Meds per Prescription", value=f"{avg_meds:.1f}" if isinstance(avg_meds, (int,float)) else "N/A")
-        
+
         timeline_data = prescription_analytics.get('prescriptions_timeline')
         if timeline_data is not None and not timeline_data.empty:
             PrescriptionTrendChart(timeline_data, title=f"Prescription Volume (Last {selected_period_days} Days)")
@@ -148,7 +148,7 @@ def render_analytics_content(doctor: dict):
             st.info("No prescription timeline data available.")
     else:
         st.info("No prescription analytics data available for the selected period.")
-    
+
     st.markdown("---")
     st.header("Medication Analytics")
     if medication_analytics:
@@ -201,7 +201,7 @@ def show_doctor_analytics_page():
     inject_css()
 
     st.markdown("<h1>📊 My Analytics Dashboard</h1>", unsafe_allow_html=True)
-    
+
     current_user = get_current_user()
     if not current_user:
         show_error_message("Unable to retrieve user information. Please log in again.")
@@ -212,15 +212,15 @@ def show_doctor_analytics_page():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'docAnalyticsUser', 
-            'username': 'dr_stats', 
-            'role': USER_ROLES['DOCTOR'], 
+            'id': 'docAnalyticsUser',
+            'username': 'dr_stats',
+            'role': USER_ROLES['DOCTOR'],
             'full_name': 'Dr. Stats',
             'email': 'dr.stats@example.com'
         }
         st.session_state.authenticated = True
         st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
-    
+
     # show_doctor_analytics_page() # Called at module level now
 
 # This call ensures Streamlit runs the page content when navigating

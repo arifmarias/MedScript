@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import copy
 
 # Config and Auth
-from config.settings import USER_ROLES, DRUG_CLASSES 
+from config.settings import USER_ROLES, DRUG_CLASSES
 from config.styles import inject_css
 from auth.authentication import require_authentication, get_current_user
 from auth.permissions import require_role_access
@@ -15,12 +15,12 @@ try:
     COMPONENTS_AVAILABLE = True
 except ImportError:
     COMPONENTS_AVAILABLE = False
-    class SearchFormComponent: 
+    class SearchFormComponent:
         def __init__(self, search_function=None,result_key_prefix=None,form_key=None,placeholder="Search...",label="Search",session_state_key="default_search_term",auto_submit=False,button_text="Search"):
             self.placeholder, self.label, self.session_state_key = placeholder, label, session_state_key
-        def render(self): 
+        def render(self):
             st.session_state[self.session_state_key] = st.text_input(self.label, value=st.session_state.get(self.session_state_key, ""), placeholder=self.placeholder, key=f"mock_search_sa_med_mgt_{self.session_state_key}_v2") # Key updated
-            return None 
+            return None
         def get_search_query(self): return st.session_state.get(self.session_state_key, "")
 
     class MedicationFormComponent:
@@ -37,13 +37,13 @@ except ImportError:
                 form_data = {}
                 form_data['name'] = st.text_input("Medication Name*", value=self.med_data.get('name', ''), key=f"{self.key_prefix}_name_v2") # Key updated
                 form_data['generic_name'] = st.text_input("Generic Name*", value=self.med_data.get('generic_name', ''), key=f"{self.key_prefix}_gen_name_v2") # Key updated
-                
+
                 available_drug_classes = DRUG_CLASSES if isinstance(DRUG_CLASSES, list) and DRUG_CLASSES else ["Analgesics", "Antibiotics", "NSAIDs", "ACE Inhibitors", "Other"]
                 current_drug_class_idx = 0
                 if self.med_data.get('drug_class') in available_drug_classes:
                     current_drug_class_idx = available_drug_classes.index(self.med_data['drug_class'])
                 form_data['drug_class'] = st.selectbox("Drug Class*", options=available_drug_classes, index=current_drug_class_idx, key=f"{self.key_prefix}_drug_class_v2") # Key updated
-                
+
                 form_data['form'] = st.text_input("Form (e.g., Tablet, Capsule)*", value=self.med_data.get('form', ''), key=f"{self.key_prefix}_form_v2") # Key updated
                 form_data['strength'] = st.text_input("Strength (e.g., 10mg, 500mg/5ml)*", value=self.med_data.get('strength', ''), key=f"{self.key_prefix}_strength_v2") # Key updated
                 form_data['manufacturer'] = st.text_input("Manufacturer", value=self.med_data.get('manufacturer', ''), key=f"{self.key_prefix}_mfr_v2") # Key updated
@@ -60,7 +60,7 @@ except ImportError:
                     valid = True
                     for field in self.required:
                         if not form_data.get(field): valid = False; show_error_message(f"{field.replace('_',' ').title()} is required.")
-                    if valid: 
+                    if valid:
                         form_data['indications'] = [i.strip() for i in form_data['indications'].split(',') if i.strip()]
                         form_data['contraindications'] = [c.strip() for c in form_data['contraindications'].split(',') if c.strip()]
                         submitted_data = form_data
@@ -68,7 +68,7 @@ except ImportError:
                     submitted_data = {"cancelled": True}
             return submitted_data
 
-    def MedicationCard(medication_data, actions, key, show_actions=True): 
+    def MedicationCard(medication_data, actions, key, show_actions=True):
         status = "Active" if medication_data.get('is_active', True) else "Inactive"
         st.markdown(f"**{medication_data.get('name', 'N/A')}** ({status})")
         st.caption(f"Generic: {medication_data.get('generic_name', 'N/A')} | Class: {medication_data.get('drug_class', 'N/A')}")
@@ -90,20 +90,20 @@ except ImportError:
     ]
     class MedicationQueries:
         @staticmethod
-        def search_medications(search_term=None, drug_class=None, is_active=None, favorites_only=None, doctor_id=None): 
+        def search_medications(search_term=None, drug_class=None, is_active=None, favorites_only=None, doctor_id=None):
             results = copy.deepcopy(MOCK_MEDS_DB_SA)
             if search_term: term = search_term.lower(); results = [m for m in results if term in m['name'].lower() or term in m.get('generic_name','').lower()]
             if drug_class and drug_class != "All": results = [m for m in results if m.get('drug_class') == drug_class]
             if is_active is not None: results = [m for m in results if m.get('is_active') == is_active]
             return sorted(results, key=lambda x: x['name']) # Sort alphabetically
         @staticmethod
-        def get_medication_details(medication_id): 
+        def get_medication_details(medication_id):
             return next((copy.deepcopy(m) for m in MOCK_MEDS_DB_SA if m['id'] == medication_id), None)
         @staticmethod
         def create_medication(data, created_by_id):
             new_id = f"med_sa_{len(MOCK_MEDS_DB_SA) + 1:03d}_{datetime.now().strftime('%S%f')}"
             new_med = {'id': new_id, **data, 'created_by': created_by_id, 'created_at': datetime.now().isoformat()}
-            if 'is_active' not in new_med: new_med['is_active'] = True 
+            if 'is_active' not in new_med: new_med['is_active'] = True
             MOCK_MEDS_DB_SA.append(new_med)
             return new_med
         @staticmethod
@@ -132,7 +132,7 @@ def handle_sa_create_medication(data, admin_id):
         new_med = MedicationQueries.create_medication(data, created_by_id=admin_id)
         if new_med:
             show_success_message(f"Medication '{new_med['name']}' added (ID: {new_med['id']}).")
-            st.session_state.sa_med_form_data_v2 = {} 
+            st.session_state.sa_med_form_data_v2 = {}
             st.session_state.sa_editing_med_id_v2 = None # Go back to manage view after adding
             st.session_state.active_sa_med_management_tab_v2 = "Manage Medications"; st.rerun()
         else: show_error_message("Failed to add medication.")
@@ -178,7 +178,7 @@ def render_sa_manage_medications_tab(admin_user: dict):
         default_drug_classes = ["Other"] # Fallback if DRUG_CLASSES is empty or not a list
         available_drug_classes_list = DRUG_CLASSES if isinstance(DRUG_CLASSES, list) and DRUG_CLASSES else default_drug_classes
         all_drug_classes_options = ["All"] + sorted(list(set(available_drug_classes_list)))
-        
+
         current_drug_class_filter = st.session_state.get('sa_med_drug_class_filter_v2', "All") # Key updated
         if current_drug_class_filter not in all_drug_classes_options: current_drug_class_filter = "All" # Ensure valid default
         st.session_state.sa_med_drug_class_filter_v2 = st.selectbox("Filter by Drug Class:", options=all_drug_classes_options, index=all_drug_classes_options.index(current_drug_class_filter), key="sa_med_class_filter_dd_v2") # Key updated
@@ -186,29 +186,29 @@ def render_sa_manage_medications_tab(admin_user: dict):
         status_options_map = {"All": None, "Active": True, "Inactive": False}
         current_status_label = st.session_state.get('sa_med_status_filter_label_v2', "All") # Key updated
         st.session_state.sa_med_status_filter_label_v2 = st.radio("Filter by Status:", options=list(status_options_map.keys()), index=list(status_options_map.keys()).index(current_status_label), horizontal=True, key="sa_med_status_radio_v2") # Key updated
-    
+
     if st.button("🔍 Apply Filters / Search", key="sa_apply_med_filters_btn_v2"): st.rerun() # Key updated
 
     meds_data_list = []
-    try: 
+    try:
         active_filter_val = status_options_map[st.session_state.sa_med_status_filter_label_v2] # Key updated
         meds_data_list = MedicationQueries.search_medications(search_term=search_query, drug_class=st.session_state.sa_med_drug_class_filter_v2, is_active=active_filter_val) # Key updated
     except Exception as e: show_error_message(f"Error: {e}")
-    
+
     st.caption(f"Displaying {len(meds_data_list)} medication(s).")
     if not meds_data_list and (search_query or st.session_state.sa_med_drug_class_filter_v2 != "All" or st.session_state.sa_med_status_filter_label_v2 != "All"): # Key updated for filters
         st.info("No medications found matching current filters.")
-    
+
     for med_item_data in meds_data_list:
-        def edit_action_fn(m_data_item=med_item_data): 
+        def edit_action_fn(m_data_item=med_item_data):
             st.session_state.sa_editing_med_id_v2 = m_data_item['id'] # Key updated
             st.session_state.sa_med_form_data_v2 = MedicationQueries.get_medication_details(m_data_item['id']) or m_data_item # Key updated
             st.session_state.active_sa_med_management_tab_v2 = "Add/Edit Medication"; st.rerun() # Key updated
-        
+
         def toggle_status_action_fn(m_id_val=med_item_data['id'], current_active_status=med_item_data.get('is_active', True)):
             handle_sa_toggle_med_status(m_id_val, current_active_status, admin_user['id'])
 
-        card_actions = {"Edit": edit_action_fn, 
+        card_actions = {"Edit": edit_action_fn,
                         f"{'Deactivate' if med_item_data.get('is_active', True) else 'Activate'}": toggle_status_action_fn}
         MedicationCard(medication_data=med_item_data, actions=card_actions, key=f"sa_med_card_{med_item_data['id']}_v2") # Key updated
         st.markdown("---")
@@ -241,21 +241,21 @@ def show_sa_medication_management_page():
     require_role_access([USER_ROLES['SUPER_ADMIN']])
     inject_css()
     st.markdown("<h1>💊 Medication Database Management (Admin)</h1>", unsafe_allow_html=True)
-    
+
     admin = get_current_user()
     if not admin: show_error_message("Admin user data not found."); return
 
     # Initialize session state keys with _v2 suffix
     for key, default_val in [('sa_editing_med_id_v2', None), ('sa_med_form_data_v2', {}),
                              ('sa_med_search_term_v2', ""), ('sa_med_drug_class_filter_v2', "All"),
-                             ('sa_med_status_filter_label_v2', "All"), 
+                             ('sa_med_status_filter_label_v2', "All"),
                              ('active_sa_med_management_tab_v2', "Manage Medications")]:
         if key not in st.session_state: st.session_state[key] = default_val
-    
+
     tab_titles_list = ["Manage Medications", "Add/Edit Medication"]
-    if st.session_state.sa_editing_med_id_v2: 
+    if st.session_state.sa_editing_med_id_v2:
         st.session_state.active_sa_med_management_tab_v2 = tab_titles_list[1]
-    
+
     tabs_obj_list = st.tabs(tab_titles_list)
 
     with tabs_obj_list[0]: render_sa_manage_medications_tab(admin)
@@ -268,10 +268,10 @@ if __name__ == "__main__":
 
     for key, default_val in [('sa_editing_med_id_v2', None), ('sa_med_form_data_v2', {}),
                              ('sa_med_search_term_v2', ""), ('sa_med_drug_class_filter_v2', "All"),
-                             ('sa_med_status_filter_label_v2', "All"), 
+                             ('sa_med_status_filter_label_v2', "All"),
                              ('active_sa_med_management_tab_v2', "Manage Medications")]:
         if key not in st.session_state: st.session_state[key] = default_val
-    
+
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components for SA Med Mgt.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for SA Med Mgt.")
 

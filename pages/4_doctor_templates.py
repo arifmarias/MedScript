@@ -26,16 +26,16 @@ def initialize_mock_db():
     if not MOCK_TEMPLATES_DB: # Only add if empty, to prevent duplicates on reruns in dev
         mock_create_template({
             "name": "Standard Flu Follow-up", "category": "Follow-up",
-            "description": "Template for typical flu follow-up.", 
+            "description": "Template for typical flu follow-up.",
             "diagnosis": "Seasonal Influenza", "instructions": "Rest, hydrate, monitor fever.",
-            "medications": [{"name": "Oseltamivir", "dosage": "75mg", "frequency": "BID", "duration": "5 days"}], 
+            "medications": [{"name": "Oseltamivir", "dosage": "75mg", "frequency": "BID", "duration": "5 days"}],
             "lab_tests": []
         }, 'docTemplateUser', is_initial_setup=True)
         mock_create_template({
             "name": "Routine Checkup", "category": "General",
-            "description": "Baseline health check.", 
+            "description": "Baseline health check.",
             "diagnosis": "Routine Health Maintenance", "instructions": "Discuss lifestyle, schedule next visit.",
-            "medications": [], 
+            "medications": [],
             "lab_tests": [{"name": "Lipid Panel", "instructions": "Fasting required"}]
         }, 'docTemplateUser', is_initial_setup=True)
 
@@ -53,7 +53,7 @@ def mock_create_template(data, doctor_id, is_initial_setup=False):
     # is_initial_setup flag to prevent success messages during __main__ setup
     new_id = f"tmpl_{len(MOCK_TEMPLATES_DB) + 1}_{datetime.now().strftime('%S%f')}" # more unique ID
     new_template = {
-        'id': new_id, 'doctor_id': doctor_id, **data, 
+        'id': new_id, 'doctor_id': doctor_id, **data,
         'created_at': datetime.now().isoformat(), 'updated_at': datetime.now().isoformat()
     }
     MOCK_TEMPLATES_DB.append(new_template)
@@ -124,7 +124,7 @@ def handle_delete_template(template_id, doctor_id):
         except Exception as e:
             show_error_message(f"Error deleting template: {e}")
             success = False
-        
+
         del st.session_state[f"confirm_delete_{template_id}"]
         if success: st.rerun()
     else:
@@ -149,7 +149,7 @@ def process_duplication(original_template_id, new_name, doctor_id):
 
         duplicated_data = {k: v for k, v in original_template.items() if k not in ['id', 'created_at', 'updated_at', 'doctor_id']}
         duplicated_data['name'] = new_name
-            
+
         # new_template = TemplateService.create_template(duplicated_data, doctor_id) # Actual
         new_template = mock_create_template(duplicated_data, doctor_id) # Mock
         if new_template:
@@ -173,7 +173,7 @@ def render_view_templates_section(doctor: dict):
         # original_template = TemplateQueries.get_template_details(original_template_id, doctor['id']) # Actual
         original_template = get_mock_template_by_id(original_template_id, doctor['id']) # Mock
         default_new_name = f"{original_template['name']} (Copy)" if original_template else "New Template Name"
-        
+
         st.text_input("Enter name for duplicated template:", value=default_new_name, key="new_template_name_for_duplicate")
         col1, col2 = st.columns(2)
         if col1.button("✅ Confirm Duplicate", key="confirm_duplicate_btn"):
@@ -192,7 +192,7 @@ def render_view_templates_section(doctor: dict):
         }
         st.rerun()
     st.markdown("---")
-    
+
     try:
         templates = TemplateQueries.get_doctor_templates(doctor['id']) # Actual
     except AttributeError:
@@ -227,7 +227,7 @@ def render_view_templates_section(doctor: dict):
 
 def edit_template_action(template_data):
     st.session_state.editing_template_id = template_data['id']
-    st.session_state.template_form_data = copy.deepcopy(template_data) 
+    st.session_state.template_form_data = copy.deepcopy(template_data)
     if 'medications' not in st.session_state.template_form_data or st.session_state.template_form_data['medications'] is None:
         st.session_state.template_form_data['medications'] = []
     if 'lab_tests' not in st.session_state.template_form_data or st.session_state.template_form_data['lab_tests'] is None:
@@ -237,23 +237,23 @@ def edit_template_action(template_data):
 def render_edit_template_section(doctor: dict):
     form_data = st.session_state.template_form_data
     is_new_template = st.session_state.editing_template_id == 'new'
-    
+
     header = "Create New Template" if is_new_template else f"Edit Template: {form_data.get('name', '')}"
     st.subheader(header)
 
     with st.form("template_form"):
         current_name = form_data.get('name', '')
         form_data['name'] = st.text_input("Template Name", value=current_name)
-        
+
         # Ensure category list is not empty and selection is valid
         categories = TEMPLATE_CONFIG.get('CATEGORIES', ["General", "Follow-up"])
         current_category = form_data.get('category', categories[0])
         if current_category not in categories: current_category = categories[0]
         category_index = categories.index(current_category)
         form_data['category'] = st.selectbox("Category", options=categories, index=category_index)
-        
+
         form_data['description'] = st.text_area("Description (optional)", value=form_data.get('description', ''))
-        
+
         st.markdown("##### Content")
         form_data['diagnosis'] = st.text_area("Diagnosis / Clinical Impression", value=form_data.get('diagnosis', ''))
         form_data['instructions'] = st.text_area("General Instructions / Advice", value=form_data.get('instructions', ''))
@@ -264,7 +264,7 @@ def render_edit_template_section(doctor: dict):
             form_data['medications'], num_rows="dynamic", key="med_editor",
             column_config={ "name": st.column_config.TextColumn("Medication Name", required=True), "dosage": "Dosage", "frequency": "Frequency", "duration": "Duration"}
         )
-        
+
         st.markdown("##### Lab Tests")
         if 'lab_tests' not in form_data or not isinstance(form_data['lab_tests'], list): form_data['lab_tests'] = []
         form_data['lab_tests'] = st.data_editor(
@@ -288,9 +288,9 @@ def render_edit_template_section(doctor: dict):
                 st.session_state.editing_template_id = None
                 st.session_state.template_form_data = {}
                 st.rerun()
-    
+
     # This direct update to session state outside form submission might be problematic if st.rerun is called elsewhere
-    # st.session_state.template_form_data = form_data 
+    # st.session_state.template_form_data = form_data
 
 
 # --- Main Page Function ---
@@ -300,7 +300,7 @@ def show_templates_page():
     inject_css()
 
     st.markdown("<h1>📋 Prescription Templates</h1>", unsafe_allow_html=True)
-    
+
     current_user = get_current_user()
     if not current_user:
         show_error_message("Unable to retrieve user information. Please log in again.")
@@ -319,7 +319,7 @@ def show_templates_page():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'docTemplateUser', 'username': 'dr_templater', 
+            'id': 'docTemplateUser', 'username': 'dr_templater',
             'role': USER_ROLES['DOCTOR'], 'full_name': 'Dr. Templater',
             'email': 'dr.templater@example.com'
         }
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     if 'editing_template_id' not in st.session_state: st.session_state.editing_template_id = None
     if 'template_form_data' not in st.session_state: st.session_state.template_form_data = {}
     if 'duplicating_template_id' not in st.session_state: st.session_state.duplicating_template_id = None
-    
+
     initialize_mock_db() # Populate mock DB for testing
     # show_templates_page() # Called at module level now
 

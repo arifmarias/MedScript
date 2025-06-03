@@ -36,29 +36,29 @@ def get_mock_medications(search_term: str, drug_class: str, favorites_only: bool
     if search_term:
         search_term_lower = search_term.lower()
         results = [
-            m for m in results if 
-            search_term_lower in m['name'].lower() or 
+            m for m in results if
+            search_term_lower in m['name'].lower() or
             search_term_lower in m.get('generic_name','').lower()
         ]
-    
+
     if drug_class != "All": # Assuming "All" means no filter by drug class
         results = [m for m in results if m.get('drug_class') == drug_class]
 
     # Add 'is_favorite' status before filtering by favorites_only
     for med in results:
         med['is_favorite'] = med['id'] in doctor_favorites
-        
+
     if favorites_only:
         results = [m for m in results if m['is_favorite']]
-        
+
     return results
 
 def mock_toggle_favorite_medication(medication_id: str, doctor_id: str):
     if doctor_id not in MOCK_FAVORITE_MEDS:
         MOCK_FAVORITE_MEDS[doctor_id] = set()
-    
+
     is_currently_favorite = medication_id in MOCK_FAVORITE_MEDS[doctor_id]
-    
+
     if is_currently_favorite:
         MOCK_FAVORITE_MEDS[doctor_id].remove(medication_id)
         return False # Was favorite, now not
@@ -71,7 +71,7 @@ def handle_toggle_favorite(medication_id: str, doctor_id: str, is_currently_favo
     try:
         # success = MedicationQueries.toggle_favorite_medication(medication_id, doctor_id, not is_currently_favorite) # Actual
         # The mock function itself toggles, so we just call it.
-        new_fav_status = mock_toggle_favorite_medication(medication_id, doctor_id) 
+        new_fav_status = mock_toggle_favorite_medication(medication_id, doctor_id)
         action = "added to" if new_fav_status else "removed from"
         show_success_message(f"Medication {action} favorites.")
     except AttributeError:
@@ -81,20 +81,20 @@ def handle_toggle_favorite(medication_id: str, doctor_id: str, is_currently_favo
         show_success_message(f"Medication {action} favorites (mock).")
     except Exception as e:
         show_error_message(f"Error updating favorite status: {e}")
-    
+
     st.rerun() # Rerun to reflect changes immediately
 
 
 # --- UI Rendering Functions ---
 def render_medication_search_and_filters():
     st.subheader("🔍 Search & Filter Medications")
-    
+
     # For SearchFormComponent, it would typically manage its own state and return search term
     # For simplicity here, using st.text_input directly with session_state
     st.session_state.med_search_term = st.text_input(
-        "Search by Name or Generic Name:", 
+        "Search by Name or Generic Name:",
         value=st.session_state.get('med_search_term', ""),
-        key="med_search_input_main" 
+        key="med_search_input_main"
     )
 
     # Filters in columns
@@ -103,22 +103,22 @@ def render_medication_search_and_filters():
         # Ensure DRUG_CLASSES is a list, provide a default if not.
         available_drug_classes = DRUG_CLASSES if isinstance(DRUG_CLASSES, list) else ["Analgesics", "Antibiotics", "NSAIDs", "ACE Inhibitors", "Bronchodilators", "Biguanides", "Penicillin Antibiotics"]
         all_drug_classes_options = ["All"] + sorted(list(set(available_drug_classes))) # Ensure unique and sorted
-        
+
         current_drug_class = st.session_state.get('med_drug_class', "All")
         if current_drug_class not in all_drug_classes_options: # Handle case where saved class is no longer valid
             current_drug_class_index = 0 # Default to "All"
         else:
             current_drug_class_index = all_drug_classes_options.index(current_drug_class)
-        
+
         st.session_state.med_drug_class = st.selectbox(
-            "Filter by Drug Class:", 
-            options=all_drug_classes_options, 
+            "Filter by Drug Class:",
+            options=all_drug_classes_options,
             index=current_drug_class_index,
             key="med_drug_class_filter_main"
         )
     with filter_cols[1]:
         st.session_state.med_show_favorites = st.checkbox(
-            "Show Only My Favorites ⭐", 
+            "Show Only My Favorites ⭐",
             value=st.session_state.get('med_show_favorites', False),
             key="med_favorites_filter_main"
         )
@@ -144,10 +144,10 @@ def render_medications_list():
 
     try:
         # medications_list = MedicationQueries.search_medications(
-        #     search_term=search_term, 
+        #     search_term=search_term,
         #     drug_class=drug_class_filter if drug_class_filter != "All" else None,
         #     favorites_only=favorites_only_filter,
-        #     doctor_id=doctor['id'] 
+        #     doctor_id=doctor['id']
         # ) # Actual
         medications_list = get_mock_medications(search_term, drug_class_filter, favorites_only_filter, doctor['id']) # Mock
     except AttributeError:
@@ -161,13 +161,13 @@ def render_medications_list():
         st.info("No medications found matching your criteria. Try adjusting your search or filters.")
         return
 
-    num_columns = 3 
+    num_columns = 3
     item_cols = st.columns(num_columns)
     for i, med_item_data in enumerate(medications_list):
         with item_cols[i % num_columns]:
             is_fav = med_item_data.get('is_favorite', False)
             fav_button_label = "🌟 Unfavorite" if is_fav else "⭐ Favorite"
-            
+
             # Define actions for the card
             card_actions = {
                 fav_button_label: lambda m_id=med_item_data['id'], d_id=doctor['id'], current_fav_status=is_fav: handle_toggle_favorite(m_id, d_id, current_fav_status),
@@ -187,7 +187,7 @@ def show_medications_page():
     inject_css()
 
     st.markdown("<h1>💊 Medications Database</h1>", unsafe_allow_html=True)
-    
+
     if 'med_search_term' not in st.session_state: st.session_state.med_search_term = ""
     if 'med_drug_class' not in st.session_state: st.session_state.med_drug_class = "All"
     if 'med_show_favorites' not in st.session_state: st.session_state.med_show_favorites = False
@@ -198,7 +198,7 @@ def show_medications_page():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'docMedBrowser', 'username': 'dr_medsearch', 
+            'id': 'docMedBrowser', 'username': 'dr_medsearch',
             'role': USER_ROLES['DOCTOR'], 'full_name': 'Dr. Med Browser',
             'email': 'dr.meds@example.com'
         }
@@ -215,7 +215,7 @@ if __name__ == "__main__":
         MOCK_FAVORITE_MEDS['docMedBrowser'] = set() # Ensure the set exists
         mock_toggle_favorite_medication('med001', 'docMedBrowser') # Amoxicillin
         mock_toggle_favorite_medication('med003', 'docMedBrowser') # Lisinopril
-    
+
     # show_medications_page() # Called at module level now
 
 # This call ensures Streamlit runs the page content when navigating

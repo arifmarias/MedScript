@@ -31,13 +31,22 @@ def main():
         # Add custom navigation links
         st.sidebar.markdown("---") # Optional separator
         st.sidebar.header("Navigation")
-        allowed_pages = get_allowed_navigation_items()
+        allowed_pages = get_allowed_navigation_items() # This line should already be there or be similar
+
         for page_info in allowed_pages:
-            st.sidebar.page_link(
-                page_info['path'], 
-                label=page_info['label'], 
-                icon=page_info.get('icon') # Use .get() for icon as it might be optional
-            )
+            # Assuming page_info['path'] is like 'pages/1_doctor_dashboard.py'
+            # We need to extract '1_doctor_dashboard' for the URL
+            try:
+                path_parts = page_info['path'].split('/')
+                filename_with_ext = path_parts[-1] # Should be '1_doctor_dashboard.py'
+                url_component = filename_with_ext.replace('.py', '')
+
+                link_markdown = f"- [{page_info.get('icon', '')} {page_info['label']}]({url_component})"
+                st.sidebar.markdown(link_markdown, unsafe_allow_html=True)
+            except Exception as e:
+                # Log or handle potential errors if path format is unexpected
+                st.sidebar.error(f"Could not create link for {page_info.get('label', 'Unknown page')}")
+
         st.sidebar.markdown("---") # Optional separator
 
         # The main area welcome message can remain
