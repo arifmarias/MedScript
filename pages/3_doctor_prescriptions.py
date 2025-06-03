@@ -13,9 +13,9 @@ from components.forms import SearchFormComponent, PrescriptionMedicationComponen
 
 # Database Queries
 from database.queries import (
-    PatientQueries,
-    MedicationQueries,
-    LabTestQueries,
+    PatientQueries, 
+    MedicationQueries, 
+    LabTestQueries, 
     PrescriptionQueries
 )
 
@@ -54,7 +54,7 @@ def get_mock_lab_tests(query: str = ""):
     if query:
         return [t for t in tests if query.lower() in t['name'].lower()]
     return tests
-
+    
 def get_mock_prescriptions(query: str, doctor_id: str):
     # Simulate a query that might return prescriptions for a doctor
     # In a real scenario, PrescriptionQueries.search_prescriptions would handle filtering by doctor_id
@@ -63,17 +63,17 @@ def get_mock_prescriptions(query: str, doctor_id: str):
         {'prescription_id': 'rx002', 'patient_name': 'Jane Smith', 'patient_id': 'p002', 'date_issued': '2023-09-15', 'status': 'Expired', 'doctor_id': 'docRxMaster', 'medications': [], 'lab_tests': [{'name': 'Lipid Panel'}]},
         {'prescription_id': 'rx003', 'patient_name': 'John Doe', 'patient_id': 'p001', 'date_issued': '2023-08-20', 'status': 'Completed', 'doctor_id': 'anotherDoc', 'medications': [{'name': 'Paracetamol 500mg'}], 'lab_tests': []},
     ]
-
+    
     # Filter by doctor_id first
     doctor_prescriptions = [rx for rx in all_prescriptions if rx['doctor_id'] == doctor_id]
 
     if not query: # If no specific query, return all for the doctor
         return doctor_prescriptions
-
+        
     # Simple text search in patient_name or prescription_id
     query_lower = query.lower()
     return [
-        rx for rx in doctor_prescriptions
+        rx for rx in doctor_prescriptions 
         if query_lower in rx['patient_name'].lower() or query_lower in rx['prescription_id'].lower()
     ]
 
@@ -131,7 +131,7 @@ def render_create_prescription_tab(doctor: dict):
 
     # 1. Patient Selection
     st.markdown("#### 1. Select Patient")
-
+    
     try:
         patient_search_fn = PatientQueries.search_patients
     except AttributeError:
@@ -145,7 +145,7 @@ def render_create_prescription_tab(doctor: dict):
         placeholder="Search patient by name or ID...",
         label="Find Patient"
     )
-    selected_patient_id = patient_search_form.render()
+    selected_patient_id = patient_search_form.render() 
 
     if selected_patient_id and (not st.session_state.get('selected_patient_for_rx') or st.session_state.selected_patient_for_rx['id'] != selected_patient_id) :
         try:
@@ -171,12 +171,12 @@ def render_create_prescription_tab(doctor: dict):
         patient = st.session_state.selected_patient_for_rx
         patient_name = format_patient_name(patient['first_name'], patient['last_name'])
         st.success(f"Selected Patient: **{patient_name}** (ID: {patient['id']})")
-
+        
         with st.expander("Patient Details", expanded=False):
             st.write(f"**DOB:** {patient.get('dob', 'N/A')}, **Gender:** {patient.get('gender', 'N/A')}")
             st.write(f"**Allergies:** {', '.join(patient.get('allergies', [])) if patient.get('allergies') else 'None reported'}")
             st.write(f"**Existing Conditions:** {', '.join(patient.get('conditions', [])) if patient.get('conditions') else 'None reported'}")
-
+        
         if st.button("Clear Selected Patient", key="clear_patient_btn"):
             st.session_state.selected_patient_for_rx = None
             st.session_state.rx_medications = []
@@ -188,13 +188,13 @@ def render_create_prescription_tab(doctor: dict):
         with st.form("create_prescription_form"):
             chief_complaint = st.text_input("Chief Complaint / Reason for Visit", key="rx_chief_complaint")
             diagnosis = st.text_area("Diagnosis / Clinical Impression", key="rx_diagnosis")
-
+            
             st.markdown("##### Medications")
             try:
                 available_meds = MedicationQueries.search_medications("")
             except AttributeError:
                 available_meds = get_mock_medications()
-
+            
             med_component = PrescriptionMedicationComponent(
                 current_medications=st.session_state.get('rx_medications', []),
                 available_medications=available_meds,
@@ -214,9 +214,9 @@ def render_create_prescription_tab(doctor: dict):
                 key_prefix="rx_lab"
             )
             st.session_state.rx_lab_tests = test_component.render()
-
+            
             general_notes = st.text_area("General Notes / Advice to Patient", key="rx_general_notes")
-
+            
             # AI Analysis Button (Placeholder) - Placed outside main submit logic if it's not a primary action
             # This button is tricky inside st.form if it's not THE submit button.
             # For now, it will also act as a submit button for the form.
@@ -244,7 +244,7 @@ def render_create_prescription_tab(doctor: dict):
                         "general_notes": general_notes,
                     }
                     if handle_save_prescription(prescription_data, st.session_state.rx_medications, st.session_state.rx_lab_tests, doctor):
-                        st.rerun()
+                        st.rerun() 
     else:
         st.info("Please search and select a patient to begin creating a prescription.")
 
@@ -257,11 +257,11 @@ def render_view_prescriptions_tab(doctor: dict):
     except AttributeError:
         st.warning("Prescription search system initializing. Using mock prescription data.", icon="⚠️")
         prescription_search_fn = lambda query: get_mock_prescriptions(query, doctor['id'])
-
+        
     # We need a way to trigger the search. A button or on query change.
     # For simplicity, use a text input and a button.
     search_query_prescriptions = st.text_input("Search by Patient Name, Rx ID...", key="rx_search_query_input")
-
+    
     if st.button("Search Prescriptions", key="rx_search_btn") or search_query_prescriptions:
         try:
             prescriptions = prescription_search_fn(search_query_prescriptions)
@@ -282,13 +282,13 @@ def render_view_prescriptions_tab(doctor: dict):
                 try:
                     # Ensure PrescriptionCard is robust enough or provide default values
                     PrescriptionCard(
-                        prescription_data=rx,
-                        actions=actions,
+                        prescription_data=rx, 
+                        actions=actions, 
                         key=f"rx_card_{rx.get('prescription_id', rx_idx)}" # Ensure unique key
                     )
                 except Exception as e:
                     st.error(f"Error rendering prescription card for {rx.get('prescription_id')}: {e}")
-                    st.json(rx)
+                    st.json(rx) 
     else:
         st.info("Enter search terms above and click 'Search Prescriptions' to find existing prescriptions for your patients.")
 
@@ -297,12 +297,12 @@ def render_view_prescriptions_tab(doctor: dict):
 def show_prescriptions_page():
     require_authentication()
     require_role_access([USER_ROLES['DOCTOR']])
-
+    
     # inject_prescription_css() # If specific CSS for this page exists
     inject_css() # Global CSS
 
     st.markdown("<h1>📝 Prescription Management</h1>", unsafe_allow_html=True)
-
+    
     current_user = get_current_user()
     if not current_user:
         show_error_message("Unable to retrieve user information. Please log in again.")
@@ -321,7 +321,7 @@ def show_prescriptions_page():
 
     with tab1:
         render_create_prescription_tab(current_user)
-
+    
     with tab2:
         render_view_prescriptions_tab(current_user)
 
@@ -329,9 +329,9 @@ if __name__ == "__main__":
     # Mock session state for isolated testing
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'docRxMaster',
-            'username': 'dr_prescriber',
-            'role': USER_ROLES['DOCTOR'],
+            'id': 'docRxMaster', 
+            'username': 'dr_prescriber', 
+            'role': USER_ROLES['DOCTOR'], 
             'full_name': 'Dr. Rx Master',
             'email': 'dr.rx@example.com'
         }
@@ -344,7 +344,7 @@ if __name__ == "__main__":
         st.session_state.rx_medications = []
     if 'rx_lab_tests' not in st.session_state:
         st.session_state.rx_lab_tests = []
-
+    
     # show_prescriptions_page() # Called at module level now
 
 # This call ensures Streamlit runs the page content when navigating

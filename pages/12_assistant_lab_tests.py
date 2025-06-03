@@ -16,16 +16,16 @@ try:
 except ImportError:
     COMPONENTS_AVAILABLE = False
     # Mock SearchFormComponent
-    class SearchFormComponent:
+    class SearchFormComponent: 
         def __init__(self, search_function=None, result_key_prefix=None, form_key=None, placeholder="Search...", label="Search", session_state_key="default_search_term", auto_submit=False, button_text="Search"):
             self.placeholder, self.label, self.session_state_key = placeholder, label, session_state_key
-        def render(self):
+        def render(self): 
             st.session_state[self.session_state_key] = st.text_input(self.label, value=st.session_state.get(self.session_state_key, ""), placeholder=self.placeholder, key=f"mock_search_asst_lab_{self.session_state_key}_v2")
-            return None
+            return None 
         def get_search_query(self): return st.session_state.get(self.session_state_key, "")
 
     # Mock LabTestCard - simplified for assistant view
-    def LabTestCard(lab_test_data, actions=None, key=None, show_actions=True):
+    def LabTestCard(lab_test_data, actions=None, key=None, show_actions=True): 
         st.markdown(f"**{lab_test_data.get('name', 'N/A')}**")
         st.caption(f"Category: {lab_test_data.get('category', 'N/A')} | Specimen: {lab_test_data.get('specimen_type', 'N/A')}")
         if show_actions and actions: # This part won't be used for assistant if actions=None or show_actions=False
@@ -68,7 +68,7 @@ from utils.helpers import show_error_message, show_success_message, show_warning
 # --- UI Rendering Functions ---
 def render_assistant_lab_test_search():
     st.subheader("🔍 Search & Filter Lab Tests")
-
+    
     search_form = SearchFormComponent(session_state_key="asst_lab_search_term_v2", label="Search by Name or Description:")
     search_form.render()
 
@@ -80,37 +80,37 @@ def render_assistant_lab_test_search():
             available_categories = default_categories
         else:
             available_categories = config_categories
-
+            
         all_category_options = ["All"] + sorted(list(set(available_categories)))
-
+        
         current_category = st.session_state.get('asst_lab_category_v2', "All")
         if current_category not in all_category_options: current_category_index = 0
         else: current_category_index = all_category_options.index(current_category)
-
+        
         st.session_state.asst_lab_category_v2 = st.selectbox(
-            "Filter by Test Category:",
-            options=all_category_options,
+            "Filter by Test Category:", 
+            options=all_category_options, 
             index=current_category_index,
             key="asst_lab_category_filter_v2"
         )
     with filter_cols[1]:
-        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True)
+        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True) 
         if st.button("🔄 Refresh / Apply", key="asst_lab_refresh_btn_v2", use_container_width=True):
             st.rerun()
     st.markdown("---")
 
 def render_assistant_lab_tests_list():
     st.subheader("Lab Test Listings")
-
+    
     search_term_val = st.session_state.get('asst_lab_search_term_v2', "")
     category_filter_val = st.session_state.get('asst_lab_category_v2', "All")
 
     try:
         lab_tests_data = LabTestQueries.search_lab_tests(
-            search_term=search_term_val,
+            search_term=search_term_val, 
             category=category_filter_val
         )
-    except AttributeError:
+    except AttributeError: 
         show_warning_message("Lab Test query service initializing. Using mock data.", icon="⚠️")
         lab_tests_data = LabTestQueries.search_lab_tests(search_term_val, category_filter_val)
     except Exception as e:
@@ -121,7 +121,7 @@ def render_assistant_lab_tests_list():
         st.info("No lab tests found matching your criteria.")
         return
 
-    num_cols = 3
+    num_cols = 3 
     item_cols = st.columns(num_cols)
     for i, test_data_item in enumerate(lab_tests_data):
         with item_cols[i % num_cols]:
@@ -142,7 +142,7 @@ def show_assistant_lab_tests_page():
 
     st.markdown("<h1>🧪 Lab Tests Database (Assistant View)</h1>", unsafe_allow_html=True)
     st.caption("This is a read-only view of the lab tests database.")
-
+    
     if 'asst_lab_search_term_v2' not in st.session_state: st.session_state.asst_lab_search_term_v2 = ""
     if 'asst_lab_category_v2' not in st.session_state: st.session_state.asst_lab_category_v2 = "All"
 
@@ -152,7 +152,7 @@ def show_assistant_lab_tests_page():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'asstLabBrowser008', 'username': 'asst_labview008',
+            'id': 'asstLabBrowser008', 'username': 'asst_labview008', 
             'role': USER_ROLES['ASSISTANT'], 'full_name': 'Alex LabView (Med Asst)',
             'email': 'alex.medasst.labview@example.com' # Unique email
         }
@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     if 'asst_lab_search_term_v2' not in st.session_state: st.session_state.asst_lab_search_term_v2 = ""
     if 'asst_lab_category_v2' not in st.session_state: st.session_state.asst_lab_category_v2 = "All"
-
+    
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components for Asst. Lab Tests.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for Asst. Lab Tests.")
 

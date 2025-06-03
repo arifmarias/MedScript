@@ -336,6 +336,7 @@ def require_role(allowed_roles: list):
         st.stop()
 
 def show_login_page():
+    st.markdown("<style>div[data-testid='stSidebarNav'] {display: none;}</style>", unsafe_allow_html=True) # <<< ADD THIS LINE
     """Display login page"""
     from config.styles import inject_css, inject_component_css
     

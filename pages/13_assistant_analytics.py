@@ -13,21 +13,21 @@ try:
     from services.analytics_service import AnalyticsService
 except ImportError:
     class AnalyticsService: # Mock service
-        def get_patient_analytics(self, role, user_id, days_back):
+        def get_patient_analytics(self, role, user_id, days_back): 
             # st.warning("AnalyticsService (get_patient_analytics) not found. Using mock data.", icon="⚠️") # Less verbose for final
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days_back)
             date_range = pd.date_range(start_date, end_date, freq='D')
             registrations_count = [max(0, int(3 + 2 * (i % 5) - (i % 2)**2 + i//7 + hash(user_id)%3)) for i in range(len(date_range))]
             return {
-                'patient_registrations_timeline': pd.DataFrame({
+                'patient_registrations_timeline': pd.DataFrame({ 
                     'date': date_range,
                     'count': registrations_count
                 }),
                 'total_patients_registered': sum(registrations_count)
             }
 
-        def get_visit_analytics(self, role, user_id, days_back):
+        def get_visit_analytics(self, role, user_id, days_back): 
             # st.warning("AnalyticsService (get_visit_analytics) not found. Using mock data.", icon="⚠️") # Less verbose for final
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days_back)
@@ -47,24 +47,24 @@ except ImportError:
             }
 
 try:
-    from components.charts import TimeSeriesChart, BarChart
+    from components.charts import TimeSeriesChart, BarChart 
     CHARTS_AVAILABLE = True
 except ImportError:
     CHARTS_AVAILABLE = False
-    def TimeSeriesChart(data, title=None, x_axis='date', y_axis='count'):
+    def TimeSeriesChart(data, title=None, x_axis='date', y_axis='count'): 
         if title: st.caption(title)
         if isinstance(data, pd.DataFrame) and not data.empty and x_axis in data.columns and y_axis in data.columns:
             st.line_chart(data.set_index(x_axis)[y_axis])
         else: st.info(f"No data or incorrect format for TimeSeriesChart: {title if title else ''}.")
 
-    def BarChart(data, title=None, x_axis=None, y_axis=None):
+    def BarChart(data, title=None, x_axis=None, y_axis=None): 
         if title: st.caption(title)
         if isinstance(data, pd.DataFrame) and not data.empty:
             if x_axis is None and len(data.columns) > 0: x_axis = data.columns[0]
             if y_axis is None and len(data.columns) > 1: y_axis = data.columns[1]
             if x_axis in data.columns and y_axis in data.columns: st.bar_chart(data.set_index(x_axis)[y_axis])
             elif x_axis in data.columns : st.bar_chart(data.set_index(x_axis))
-            else: st.bar_chart(data)
+            else: st.bar_chart(data) 
         else: st.info(f"No data or incorrect format for BarChart: {title if title else ''}.")
 
 # Utils
@@ -82,13 +82,13 @@ def render_assistant_analytics_content(assistant: dict):
             options=[7, 15, 30, 60, 90],
             format_func=lambda x: f"Last {x} days",
             index=2, # Default to 30 days
-            key="asst_analytics_period_select_v2"
+            key="asst_analytics_period_select_v2" 
         )
     with col3:
-        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True)
+        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True) 
         if st.button("🔄 Refresh Data", key="refresh_asst_analytics_v2", use_container_width=True):
             st.rerun()
-
+    
     st.markdown("---")
 
     try:
@@ -104,7 +104,7 @@ def render_assistant_analytics_content(assistant: dict):
     if patient_reg_analytics and isinstance(patient_reg_analytics, dict):
         total_registered = patient_reg_analytics.get('total_patients_registered', 0)
         st.metric(label=f"Total Patients Registered (Last {selected_period_days} days)", value=total_registered if total_registered is not None else "N/A")
-
+        
         reg_timeline_data = patient_reg_analytics.get('patient_registrations_timeline')
         if isinstance(reg_timeline_data, pd.DataFrame) and not reg_timeline_data.empty:
             TimeSeriesChart(reg_timeline_data, title="Registration Trend", x_axis='date', y_axis='count')
@@ -112,7 +112,7 @@ def render_assistant_analytics_content(assistant: dict):
             st.info("No patient registration trend data available for this period.")
     else:
         st.info("No patient registration analytics available or data is in an unexpected format.")
-
+    
     st.markdown("---")
 
     st.subheader("🗓️ Visit Recordings by You")
@@ -125,7 +125,7 @@ def render_assistant_analytics_content(assistant: dict):
             TimeSeriesChart(visit_timeline_data, title="Visit Recording Trend", x_axis='date', y_axis='count')
         else:
             st.info("No visit recording trend data available for this period.")
-
+        
         st.markdown("##### Visit Types Recorded by You")
         visit_types_data = visit_rec_analytics.get('visit_types_distribution')
         if isinstance(visit_types_data, pd.DataFrame) and not visit_types_data.empty:
@@ -143,7 +143,7 @@ def show_assistant_analytics_page():
     inject_css()
 
     st.markdown("<h1>📊 My Activity Analytics</h1>", unsafe_allow_html=True)
-
+    
     current_user = get_current_user()
     if not current_user:
         show_error_message("Unable to retrieve user information. Please log in again.")
@@ -155,14 +155,14 @@ if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
             'id': 'asstAnalyticsUser002', # Changed ID for testing
-            'username': 'asst_analyzer002',
-            'role': USER_ROLES['ASSISTANT'],
+            'username': 'asst_analyzer002', 
+            'role': USER_ROLES['ASSISTANT'], 
             'full_name': 'Drew Analyzer (Asst.)', # Changed name
             'email': 'drew.analyzer.asst@example.com'
         }
         st.session_state.authenticated = True
         st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
-
+    
     if not CHARTS_AVAILABLE: st.sidebar.warning("Using MOCK Chart components for Asst. Analytics.")
     # No specific session state for filters needed at this top level, handled by selectbox key
 

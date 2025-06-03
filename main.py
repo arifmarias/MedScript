@@ -1,5 +1,6 @@
 import streamlit as st
 from database.init_db import check_and_initialize_database
+from auth.permissions import get_allowed_navigation_items # Added import
 from auth.authentication import (
     initialize_session,
     is_authenticated,
@@ -27,6 +28,19 @@ def main():
             logout_user()
             st.rerun()
 
+        # Add custom navigation links
+        st.sidebar.markdown("---") # Optional separator
+        st.sidebar.header("Navigation")
+        allowed_pages = get_allowed_navigation_items()
+        for page_info in allowed_pages:
+            st.sidebar.page_link(
+                page_info['path'], 
+                label=page_info['label'], 
+                icon=page_info.get('icon') # Use .get() for icon as it might be optional
+            )
+        st.sidebar.markdown("---") # Optional separator
+
+        # The main area welcome message can remain
         st.markdown("""
             # Welcome to MedScript Pro!
 

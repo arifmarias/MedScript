@@ -569,9 +569,9 @@ if __name__ == "__main__":
     # Mock setup or specific direct run logic can go here
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'sa_usermgt_direct',
-            'username': 'sa_usermgt_direct',
-            'role': USER_ROLES['SUPER_ADMIN'],
+            'id': 'sa_usermgt_direct', 
+            'username': 'sa_usermgt_direct', 
+            'role': USER_ROLES['SUPER_ADMIN'], 
             'full_name': 'SA UserMgt Direct Runner'
         }
         st.session_state.authenticated = True

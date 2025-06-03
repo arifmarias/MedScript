@@ -14,17 +14,17 @@ try:
     COMPONENTS_AVAILABLE = True
 except ImportError:
     COMPONENTS_AVAILABLE = False
-    class SearchFormComponent:
+    class SearchFormComponent: 
         def __init__(self, search_function=None, result_key_prefix=None, form_key=None, placeholder="Search...", label="Search", session_state_key="default_search_term", auto_submit=False, button_text="Search"):
             self.placeholder, self.label, self.session_state_key = placeholder, label, session_state_key
-        def render(self):
+        def render(self): 
             st.session_state[self.session_state_key] = st.text_input(self.label, value=st.session_state.get(self.session_state_key, ""), placeholder=self.placeholder, key=f"mock_search_sa_pat_{self.session_state_key}_v2") # Key updated
-            return None
+            return None 
         def get_search_query(self): return st.session_state.get(self.session_state_key, "")
 
     class PatientFormComponent:
         def __init__(self, edit_mode=False, patient_data=None, key_prefix="sa_patient_form", required_fields=None):
-            self.edit_mode = edit_mode
+            self.edit_mode = edit_mode 
             self.patient_data = patient_data if patient_data else {}
             self.key_prefix = key_prefix
             self.required_fields = required_fields or ['first_name', 'last_name', 'dob', 'phone_number']
@@ -36,7 +36,7 @@ except ImportError:
                 form_data = {}
                 form_data['first_name'] = st.text_input("First Name*", value=self.patient_data.get('first_name', ''), key=f"{self.key_prefix}_fname_sa_v2") # Key updated
                 form_data['last_name'] = st.text_input("Last Name*", value=self.patient_data.get('last_name', ''), key=f"{self.key_prefix}_lname_sa_v2") # Key updated
-
+                
                 dob_val = self.patient_data.get('dob')
                 if isinstance(dob_val, str):
                     try: dob_val = datetime.strptime(dob_val, '%Y-%m-%d').date()
@@ -52,7 +52,7 @@ except ImportError:
                 form_data['allergies'] = st.text_area("Allergies", value=self.patient_data.get('allergies', ''), key=f"{self.key_prefix}_allergies_sa_v2")
                 form_data['medical_history'] = st.text_area("Medical History Summary", value=self.patient_data.get('medical_history', ''), key=f"{self.key_prefix}_medhist_sa_v2")
 
-
+                
                 submit_btn_label = "Update Patient Details"
                 col1, col2 = st.columns([3,1])
                 if col1.form_submit_button(submit_btn_label, use_container_width=True, type="primary"):
@@ -67,7 +67,7 @@ except ImportError:
 try:
     from components.cards import PatientCard
 except ImportError:
-    def PatientCard(patient_data, actions, key):
+    def PatientCard(patient_data, actions, key): 
         st.markdown(f"**{patient_data.get('first_name', 'N/A')} {patient_data.get('last_name', 'N/A')}** (ID: {patient_data.get('id', 'N/A')})")
         st.caption(f"DOB: {patient_data.get('dob', 'N/A')} | Phone: {patient_data.get('phone_number', 'N/A')} | Created By: {patient_data.get('created_by', 'N/A')}")
         for action_label, action_func in actions.items():
@@ -87,7 +87,7 @@ except ImportError:
     ]
     class PatientQueries:
         @staticmethod
-        def search_patients(search_term=None, patient_id=None, created_by=None):
+        def search_patients(search_term=None, patient_id=None, created_by=None): 
             results = copy.deepcopy(MOCK_PATIENTS_STORE_SA)
             if patient_id: return [p for p in results if p['id'] == patient_id]
             if search_term: # Super Admin search ignores created_by
@@ -95,13 +95,13 @@ except ImportError:
                 results = [p for p in results if term in p['first_name'].lower() or term in p['last_name'].lower() or term in p.get('phone_number','') or term in p.get('email','')]
             return results
         @staticmethod
-        def get_patient_details(patient_id):
+        def get_patient_details(patient_id): 
             return next((copy.deepcopy(p) for p in MOCK_PATIENTS_STORE_SA if p['id'] == patient_id), None)
         @staticmethod
-        def update_patient(patient_id, data, updated_by_id):
+        def update_patient(patient_id, data, updated_by_id): 
             for i, p_item in enumerate(MOCK_PATIENTS_STORE_SA):
                 if p_item['id'] == patient_id:
-                    original_creator = p_item.get('created_by')
+                    original_creator = p_item.get('created_by') 
                     MOCK_PATIENTS_STORE_SA[i] = {**p_item, **data, 'last_updated_by': updated_by_id, 'updated_at': datetime.now().isoformat()}
                     if 'created_by' not in data: MOCK_PATIENTS_STORE_SA[i]['created_by'] = original_creator
                     return MOCK_PATIENTS_STORE_SA[i]
@@ -116,10 +116,10 @@ def handle_sa_update_patient(patient_id, data, admin_id):
         updated_patient = PatientQueries.update_patient(patient_id, data, updated_by_id=admin_id)
         if updated_patient:
             show_success_message(f"Patient {updated_patient['first_name']} {updated_patient['last_name']} updated by Admin.")
-            st.session_state.sa_editing_patient_id_v2 = None
+            st.session_state.sa_editing_patient_id_v2 = None 
             st.session_state.sa_patient_form_data_v2 = {}
-            st.session_state.active_sa_patient_management_tab_v2 = "Search & Manage Patients"
-            st.rerun()
+            st.session_state.active_sa_patient_management_tab_v2 = "Search & Manage Patients" 
+            st.rerun() 
         else: show_error_message("Failed to update patient information.")
     except Exception as e: show_error_message(f"Error updating patient: {e}")
 
@@ -135,23 +135,23 @@ def render_sa_search_manage_patients_tab(admin_user: dict):
 
     patients_data = []
     if perform_search_now or not search_query: # If button clicked or no search query (show all)
-        try: patients_data = PatientQueries.search_patients(search_term=search_query)
+        try: patients_data = PatientQueries.search_patients(search_term=search_query) 
         except Exception as e: show_error_message(f"Error searching patients: {e}")
 
-    total_system_patients = len(PatientQueries.search_patients())
+    total_system_patients = len(PatientQueries.search_patients()) 
     st.caption(f"Displaying {len(patients_data)} of {total_system_patients} total patients in system.")
 
     if not patients_data and search_query: st.info(f"No patients found matching '{search_query}'.")
     elif not patients_data and not search_query : st.info("No patients in the system yet.") # Only if DB is empty
-
+    
     for p_item_data in patients_data:
-        def edit_action_sa(patient_data_item=p_item_data):
+        def edit_action_sa(patient_data_item=p_item_data): 
             st.session_state.sa_editing_patient_id_v2 = patient_data_item['id'] # Key updated
             full_details_sa = PatientQueries.get_patient_details(patient_data_item['id'])
             st.session_state.sa_patient_form_data_v2 = full_details_sa if full_details_sa else patient_data_item # Key updated
             st.session_state.active_sa_patient_management_tab_v2 = "Edit Patient Details"  # Key updated
             st.rerun()
-
+        
         actions_for_card = {"Edit Patient Details": edit_action_sa}
         PatientCard(patient_data=p_item_data, actions=actions_for_card, key=f"sa_pat_card_{p_item_data['id']}_v2") # Key updated
         st.markdown("---")
@@ -177,14 +177,14 @@ def render_sa_edit_patient_tab(admin_user: dict):
             st.session_state.active_sa_patient_management_tab_v2 = "Search & Manage Patients"; st.rerun() # Key updated
         else:
             handle_sa_update_patient(st.session_state.sa_editing_patient_id_v2, submitted_patient_data, admin_user['id']) # Key updated
-
+    
 # --- Main Page Function ---
 def show_sa_patient_management_page():
     require_authentication()
     require_role_access([USER_ROLES['SUPER_ADMIN']])
     inject_css()
     st.markdown("<h1>👥 All Patients (Super Admin View)</h1>", unsafe_allow_html=True)
-
+    
     admin = get_current_user()
     if not admin: show_error_message("Admin user data not found."); return
 
@@ -192,11 +192,11 @@ def show_sa_patient_management_page():
     if 'sa_editing_patient_id_v2' not in st.session_state: st.session_state.sa_editing_patient_id_v2 = None
     if 'sa_patient_form_data_v2' not in st.session_state: st.session_state.sa_patient_form_data_v2 = {}
     if 'sa_patient_search_term_v2' not in st.session_state: st.session_state.sa_patient_search_term_v2 = ""
-    if 'active_sa_patient_management_tab_v2' not in st.session_state:
+    if 'active_sa_patient_management_tab_v2' not in st.session_state: 
         st.session_state.active_sa_patient_management_tab_v2 = "Search & Manage Patients"
 
     tab_titles_sa = ["Search & Manage Patients", "Edit Patient Details"]
-
+    
     # Logic to determine which tab should be "active" based on session state
     # This doesn't directly set st.tabs' active tab, but ensures content is ready for when user clicks or page reruns
     if st.session_state.sa_editing_patient_id_v2:
@@ -204,7 +204,7 @@ def show_sa_patient_management_page():
         # Streamlit's st.tabs doesn't have a programmatic way to set the active tab after initial render without workarounds.
         # The content of the tabs will be conditional on session state.
         pass # The content of render_sa_edit_patient_tab will handle being visible.
-
+    
     tab1_sa, tab2_sa = st.tabs(tab_titles_sa)
 
     with tab1_sa:
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     if 'sa_patient_form_data_v2' not in st.session_state: st.session_state.sa_patient_form_data_v2 = {}
     if 'sa_patient_search_term_v2' not in st.session_state: st.session_state.sa_patient_search_term_v2 = ""
     if 'active_sa_patient_management_tab_v2' not in st.session_state: st.session_state.active_sa_patient_management_tab_v2 = "Search & Manage Patients"
-
+    
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components for SA Patient Mgt.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for SA Patient Mgt.")
 
