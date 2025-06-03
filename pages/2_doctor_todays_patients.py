@@ -87,7 +87,7 @@ def render_todays_patients_list(doctor: dict):
         for visit_data in upcoming_visits:
             patient_name = format_patient_name(visit_data.get('patient_first_name'), visit_data.get('patient_last_name'))
             visit_time_formatted = format_time_display(visit_data.get('visit_time')) if visit_data.get('visit_time') else "N/A"
-            
+
             # Prepare actions for the PatientCard
             actions = {
                 "View Details": lambda v=visit_data: handle_patient_action("View Details", v),
@@ -105,11 +105,11 @@ def render_todays_patients_list(doctor: dict):
                 'status': visit_data.get('status', 'Scheduled'),
                 # Any other relevant details for the card
             }
-            
+
             try:
                 # Assuming PatientCard is a component that takes this data
                 PatientCard(
-                    patient_data=card_data, 
+                    patient_data=card_data,
                     actions=actions,
                     key=f"patient_card_{visit_data.get('visit_id')}"
                 )
@@ -143,7 +143,7 @@ def render_todays_patients_list(doctor: dict):
             except Exception as e:
                 st.error(f"Could not display patient card for {patient_name}: {e}")
         st.markdown("---")
-    
+
     if other_visits:
         st.subheader("Other Status")
         for visit_data in other_visits:
@@ -154,11 +154,11 @@ def show_todays_patients_page():
     """Main function to display the Today's Patients page."""
     require_authentication()
     require_role_access([USER_ROLES['DOCTOR']]) # Ensure role access
-    
+
     inject_css() # Inject global styles if any specific to this page are added
 
     st.markdown("<h1>📅 Today's Patients</h1>", unsafe_allow_html=True)
-    
+
     doctor = get_current_user()
     if doctor:
         st.info(f"Displaying today's patient list for Dr. {doctor.get('full_name', 'N/A')}.")
@@ -170,15 +170,15 @@ if __name__ == "__main__":
     # Mock session state for isolated testing
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'doc789', 
-            'username': 'dr_today', 
-            'role': USER_ROLES['DOCTOR'], 
+            'id': 'doc789',
+            'username': 'dr_today',
+            'role': USER_ROLES['DOCTOR'],
             'full_name': 'Dr. Every Day',
             'email': 'dr.every@example.com'
         }
         st.session_state.authenticated = True
         st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
-    
+
     # show_todays_patients_page() # Called at module level now
 
 # This call ensures Streamlit runs the page content when navigating

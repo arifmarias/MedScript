@@ -29,27 +29,27 @@ MOCK_LAB_TESTS_DB = [
 ]
 
 def get_mock_lab_tests(search_term: str, category: str):
-    results = copy.deepcopy(MOCK_LAB_TESTS_DB) 
+    results = copy.deepcopy(MOCK_LAB_TESTS_DB)
 
     if search_term:
         search_term_lower = search_term.lower()
         results = [
-            lt for lt in results if 
+            lt for lt in results if
             search_term_lower in lt['name'].lower() or
             search_term_lower in lt.get('description', '').lower()
         ]
-    
-    if category != "All": 
+
+    if category != "All":
         results = [lt for lt in results if lt.get('category') == category]
-        
+
     return results
 
 # --- UI Rendering Functions ---
 def render_lab_test_search_and_filters():
     st.subheader("🔍 Search & Filter Lab Tests")
-    
+
     st.session_state.lab_search_term = st.text_input(
-        "Search by Name or Description:", 
+        "Search by Name or Description:",
         value=st.session_state.get('lab_search_term', ""),
         key="lab_search_input_main_v2" # Changed key to avoid conflict if old one is stuck
     )
@@ -63,23 +63,23 @@ def render_lab_test_search_and_filters():
             available_categories = default_categories
         else:
             available_categories = config_categories
-            
-        all_category_options = ["All"] + sorted(list(set(available_categories))) 
-        
+
+        all_category_options = ["All"] + sorted(list(set(available_categories)))
+
         current_category = st.session_state.get('lab_test_category', "All")
-        if current_category not in all_category_options: 
-            current_category_index = 0 
+        if current_category not in all_category_options:
+            current_category_index = 0
         else:
             current_category_index = all_category_options.index(current_category)
-        
+
         st.session_state.lab_test_category = st.selectbox(
-            "Filter by Test Category:", 
-            options=all_category_options, 
+            "Filter by Test Category:",
+            options=all_category_options,
             index=current_category_index,
             key="lab_category_filter_main_v2" # Changed key
         )
     with filter_cols[1]:
-        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True) 
+        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True)
         if st.button("🔄 Refresh / Apply", key="lab_refresh_btn_main_v2", use_container_width=True): # Changed key
             st.rerun()
 
@@ -88,13 +88,13 @@ def render_lab_test_search_and_filters():
 
 def render_lab_tests_list():
     st.subheader("Lab Test Listings")
-    
+
     search_term = st.session_state.get('lab_search_term', "")
     category_filter = st.session_state.get('lab_test_category', "All")
 
     try:
         # lab_tests_list_data = LabTestQueries.search_lab_tests(
-        #     search_term=search_term, 
+        #     search_term=search_term,
         #     category=category_filter if category_filter != "All" else None,
         # ) # Actual
         lab_tests_list_data = get_mock_lab_tests(search_term, category_filter) # Mock
@@ -109,7 +109,7 @@ def render_lab_tests_list():
         st.info("No lab tests found matching your criteria. Try adjusting your search or filters.")
         return
 
-    num_columns = 3 
+    num_columns = 3
     item_cols = st.columns(num_columns)
     for i, test_item_data_obj in enumerate(lab_tests_list_data):
         with item_cols[i % num_columns]:
@@ -130,7 +130,7 @@ def show_lab_tests_page():
     inject_css()
 
     st.markdown("<h1>🧪 Lab Tests Database</h1>", unsafe_allow_html=True)
-    
+
     if 'lab_search_term' not in st.session_state: st.session_state.lab_search_term = ""
     if 'lab_test_category' not in st.session_state: st.session_state.lab_test_category = "All"
 
@@ -140,9 +140,9 @@ def show_lab_tests_page():
 if __name__ == "__main__":
     if 'user' not in st.session_state:
         st.session_state.user = {
-            'id': 'docLabBrowser', 
-            'username': 'dr_labsearch', 
-            'role': USER_ROLES['DOCTOR'], 
+            'id': 'docLabBrowser',
+            'username': 'dr_labsearch',
+            'role': USER_ROLES['DOCTOR'],
             'full_name': 'Dr. Lab Browser',
             'email': 'dr.labs@example.com'
         }
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     if 'lab_search_term' not in st.session_state: st.session_state.lab_search_term = ""
     if 'lab_test_category' not in st.session_state: st.session_state.lab_test_category = "All"
-    
+
     # show_lab_tests_page() # Called at module level now
 
 # This call ensures Streamlit runs the page content when navigating

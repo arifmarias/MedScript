@@ -18,9 +18,9 @@ except ImportError:
     class SearchFormComponent: # Mock
         def __init__(self, search_function=None, result_key_prefix=None, form_key=None, placeholder="Search...", label="Search", session_state_key="default_search_term", auto_submit=False, button_text="Search"):
             self.placeholder, self.label, self.session_state_key = placeholder, label, session_state_key
-        def render(self): 
+        def render(self):
             st.session_state[self.session_state_key] = st.text_input(self.label, value=st.session_state.get(self.session_state_key, ""), placeholder=self.placeholder, key=f"mock_search_vm_{self.session_state_key}_v3")
-            return None 
+            return None
         def get_search_query(self): return st.session_state.get(self.session_state_key, "")
 
     class VisitFormComponent: # Mock
@@ -36,7 +36,7 @@ except ImportError:
             with st.form(key=f"{self.key_prefix}_form_main_visit_v3"):
                 form_data = {}
                 st.markdown(f"**Patient:** {self.patient_data.get('first_name','N/A')} {self.patient_data.get('last_name','N/A')}")
-                
+
                 current_visit_date_str = self.visit_data.get('visit_date', datetime.now().strftime('%Y-%m-%d'))
                 try:
                     current_visit_date = datetime.strptime(current_visit_date_str, '%Y-%m-%d').date()
@@ -45,9 +45,9 @@ except ImportError:
 
                 form_data['visit_date'] = st.date_input("Visit Date*", value=current_visit_date, key=f"{self.key_prefix}_vdate_v3", min_value=py_date(2000,1,1), max_value=py_date.today() + timedelta(days=365)) # Allow future dates for scheduling
                 form_data['visit_type'] = st.selectbox("Visit Type*", options=["Check-up", "Follow-up", "New Complaint", "Vaccination", "Procedure", "Scheduled Consultation"], index=0, key=f"{self.key_prefix}_vtype_v3")
-                form_data['doctor_assigned_id'] = st.text_input("Doctor Assigned (ID)", value=self.visit_data.get('doctor_assigned_id','doc1'), key=f"{self.key_prefix}_vdoc_v3") 
+                form_data['doctor_assigned_id'] = st.text_input("Doctor Assigned (ID)", value=self.visit_data.get('doctor_assigned_id','doc1'), key=f"{self.key_prefix}_vdoc_v3")
                 form_data['notes'] = st.text_area("Visit Notes / Chief Complaint", value=self.visit_data.get('notes',''), key=f"{self.key_prefix}_vnotes_v3")
-                
+
                 # Vital Signs as a sub-dictionary
                 vital_signs_data = self.visit_data.get('vital_signs',{})
                 form_data['vital_signs'] = {
@@ -60,7 +60,7 @@ except ImportError:
                 submit_label = "Update Visit" if self.edit_mode else "Record Visit"
                 col1, col2 = st.columns([3,1])
                 if col1.form_submit_button(submit_label, use_container_width=True, type="primary"):
-                    valid = True 
+                    valid = True
                     if not form_data.get('visit_date') or not form_data.get('visit_type'): valid = False; show_error_message("Visit Date and Type are required.")
                     if valid: submitted_data = {k: (v.isoformat() if isinstance(v, (py_date, datetime)) else v) for k,v in form_data.items()}
                 if col2.form_submit_button("Cancel", type="secondary", use_container_width=True):
@@ -74,7 +74,7 @@ try:
 except ImportError:
     DB_QUERIES_AVAILABLE = False
     # st.warning("PatientQueries or VisitQueries not found. Using mock data stores.", icon="⚠️") # Moved to __main__
-    MOCK_PATIENTS_VISIT_PAGE = [ 
+    MOCK_PATIENTS_VISIT_PAGE = [
         {'id': 'pat_001', 'first_name': 'John', 'last_name': 'Doe', 'dob': '1985-01-15', 'phone_number': '555-0101', 'created_by': 'assistant123'},
         {'id': 'pat_002', 'first_name': 'Jane', 'last_name': 'Smith', 'dob': '1992-07-22', 'phone_number': '555-0202', 'created_by': 'assistant456'},
         {'id': 'pat_003', 'first_name': 'Alice', 'last_name': 'Johnson', 'dob': '1990-05-20', 'phone_number': '555-0303', 'created_by': 'assistant123'},
@@ -84,9 +84,9 @@ except ImportError:
         {'id': 'visit_002', 'patient_id': 'pat_002', 'patient_name': 'Jane Smith', 'visit_date': (datetime.now() - timedelta(days=2)).isoformat()[:10], 'visit_type': 'Follow-up', 'notes': 'Post-op review', 'created_by': 'assistant456', 'doctor_assigned_id': 'doc2', 'vital_signs': {'bp': '110/70', 'temp_c': 36.8, 'pulse': 65, 'weight_kg': 60.2}},
         {'id': 'visit_003', 'patient_id': 'pat_001', 'patient_name': 'John Doe', 'visit_date': datetime.now().isoformat()[:10], 'visit_type': 'New Complaint', 'notes': 'Sore throat', 'created_by': 'assistant123', 'doctor_assigned_id': 'doc1', 'vital_signs': {'bp': '125/85', 'temp_c': 37.5, 'pulse': 72, 'weight_kg': 75.5}},
     ]
-    class PatientQueries: 
+    class PatientQueries:
         @staticmethod
-        def search_patients(search_term=None, patient_id=None, created_by=None): 
+        def search_patients(search_term=None, patient_id=None, created_by=None):
             results = copy.deepcopy(MOCK_PATIENTS_VISIT_PAGE)
             if patient_id: return [p for p in results if p['id'] == patient_id]
             if search_term:
@@ -97,7 +97,7 @@ except ImportError:
         def get_patient_details(patient_id):
              return next((copy.deepcopy(p) for p in MOCK_PATIENTS_VISIT_PAGE if p['id'] == patient_id), None)
 
-    class VisitQueries: 
+    class VisitQueries:
         @staticmethod
         def search_visits(search_term=None, created_by=None, patient_id=None):
             results = copy.deepcopy(MOCK_VISITS_STORE)
@@ -140,7 +140,7 @@ def handle_create_visit(data, assistant_id):
         new_visit = VisitQueries.create_visit(data, recorded_by_id=assistant_id)
         if new_visit:
             show_success_message(f"Visit for {st.session_state.selected_patient_for_visit['first_name']} recorded (ID: {new_visit['id']}).")
-            st.session_state.visit_form_data = {} 
+            st.session_state.visit_form_data = {}
             # st.session_state.selected_patient_for_visit = None # Keep patient selected for potential next visit for same patient or clear
             # st.session_state.active_visit_management_tab_key = "View & Manage Visits"; st.rerun()
         else: show_error_message("Failed to record visit.")
@@ -182,7 +182,7 @@ def render_view_manage_visits_tab(assistant: dict):
             st.session_state.visit_form_data = full_v_details if full_v_details else visit_data_item
             pat_details = PatientQueries.get_patient_details(visit_data_item['patient_id'])
             st.session_state.selected_patient_for_visit = pat_details
-            st.session_state.active_visit_management_tab_key = "Record / Edit Visit" 
+            st.session_state.active_visit_management_tab_key = "Record / Edit Visit"
             st.rerun()
 
         # Simple display for now, a VisitCard component would be better.
@@ -209,13 +209,13 @@ def render_record_edit_visit_tab(assistant: dict):
                 try: st.session_state.patients_found_for_visit_list = PatientQueries.search_patients(search_term=pat_search_q)
                 except Exception as e: show_error_message(f"Error: {e}"); st.session_state.patients_found_for_visit_list = []
             else: st.info("Enter search term."); st.session_state.patients_found_for_visit_list = []
-        
+
         if 'patients_found_for_visit_list' in st.session_state:
             for p_item in st.session_state.patients_found_for_visit_list:
                 p_name = format_patient_name(p_item.get('first_name'), p_item.get('last_name'))
                 if st.button(f"Select: {p_name} (ID: {p_item['id']})", key=f"sel_pat_v_{p_item['id']}_v3"):
                     st.session_state.selected_patient_for_visit = PatientQueries.get_patient_details(p_item['id'])
-                    st.session_state.patients_found_for_visit_list = [] 
+                    st.session_state.patients_found_for_visit_list = []
                     st.rerun()
             if not st.session_state.patients_found_for_visit_list and pat_search_q: st.info("No patients found.")
 
@@ -234,7 +234,7 @@ def render_record_edit_visit_tab(assistant: dict):
                 st.session_state.active_visit_management_tab_key = "View & Manage Visits"; st.rerun()
             elif is_edit: handle_update_visit(st.session_state.editing_visit_id, submitted_data, assistant['id'])
             else: handle_create_visit(submitted_data, assistant['id'])
-        
+
         cancel_label = "Cancel Edit Mode" if is_edit else "Change Selected Patient / Cancel"
         if st.button(cancel_label, key="cancel_visit_form_btn_main_v3"):
             st.session_state.editing_visit_id = None; st.session_state.visit_form_data = {}; st.session_state.selected_patient_for_visit = None
@@ -248,29 +248,29 @@ def show_visit_management_page():
     require_role_access([USER_ROLES['ASSISTANT']])
     inject_css()
     st.markdown("<h1>🗓️ Patient Visit Management</h1>", unsafe_allow_html=True)
-    
+
     curr_user = get_current_user()
     if not curr_user: show_error_message("User data not found."); return
 
     # Initialize session states
     for key, default_val in [('selected_patient_for_visit', None), ('editing_visit_id', None),
-                             ('visit_form_data', {}), ('visit_search_term_main_v3', ""), 
-                             ('visit_patient_search_term_main_v3', ""), 
+                             ('visit_form_data', {}), ('visit_search_term_main_v3', ""),
+                             ('visit_patient_search_term_main_v3', ""),
                              ('active_visit_management_tab_key', "View & Manage Visits"),
                              ('patients_found_for_visit_list', [])]:
         if key not in st.session_state: st.session_state[key] = default_val
-    
+
     tab_list = ["View & Manage Visits", "Record / Edit Visit"]
     if st.session_state.editing_visit_id or st.session_state.selected_patient_for_visit:
         st.session_state.active_visit_management_tab_key = tab_list[1] # Default to this tab if state implies it
-    
+
     # This simple tab switch method relies on reruns caused by other actions setting the state.
     # More direct tab switching in Streamlit is complex.
     active_tab_index = tab_list.index(st.session_state.active_visit_management_tab_key) if st.session_state.active_visit_management_tab_key in tab_list else 0
-    
+
     # We are not using default_index in st.tabs as it's not a direct parameter.
     # The content within tabs will handle visibility based on session state.
-    tabs_display = st.tabs(tab_list) 
+    tabs_display = st.tabs(tab_list)
 
     with tabs_display[0]: render_view_manage_visits_tab(curr_user)
     with tabs_display[1]: render_record_edit_visit_tab(curr_user)
@@ -281,15 +281,15 @@ if __name__ == "__main__":
         st.session_state.authenticated = True; st.session_state.session_valid_until = datetime.now() + timedelta(hours=1)
 
     for key, default_val in [('selected_patient_for_visit', None), ('editing_visit_id', None),
-                             ('visit_form_data', {}), ('visit_search_term_main_v3', ""), 
-                             ('visit_patient_search_term_main_v3', ""), 
+                             ('visit_form_data', {}), ('visit_search_term_main_v3', ""),
+                             ('visit_patient_search_term_main_v3', ""),
                              ('active_visit_management_tab_key', "View & Manage Visits"),
                              ('patients_found_for_visit_list', [])]:
         if key not in st.session_state: st.session_state[key] = default_val
 
     if not COMPONENTS_AVAILABLE: st.sidebar.warning("Using MOCK UI components for Visit Mgt.")
     if not DB_QUERIES_AVAILABLE: st.sidebar.warning("Using MOCK DB Queries for Visit Mgt.")
-    
+
     # Ensure mock formatters are available if not imported from utils
     if 'format_patient_name' not in globals() or not callable(globals()['format_patient_name']):
         def format_patient_name(first, last): return f"{first or ''} {last or ''}".strip()
