@@ -22,7 +22,10 @@ from pages.c8_assistant_dashboard import show_assistant_dashboard # Placeholder
 from pages.c14_super_admin_dashboard import show_super_admin_dashboard # Placeholder
 # Actual imports based on ls output:
 # from pages.d1_doctor_dashboard import show_doctor_dashboard # MOVED LOCALLY
-# from pages.d2_doctor_todays_patients import show_todays_patients_page # Will be MOVED LOCALLY
+# from pages.d2_doctor_todays_patients import show_todays_patients_page # MOVED LOCALLY
+# from pages.d3_doctor_prescriptions import show_prescriptions_page # MOVED LOCALLY
+# from pages.d4_doctor_templates import show_templates_page # MOVED LOCALLY
+# from pages.d5_doctor_medications import show_medications_page # Will be MOVED LOCALLY
 # from pages.d8_assistant_dashboard import show_assistant_dashboard # MOVED LOCALLY
 # from pages.d14_super_admin_dashboard import show_super_admin_dashboard # MOVED LOCALLY
 
@@ -59,16 +62,76 @@ except ImportError:
     if "create_medical_kpi_dashboard" not in globals():
         def create_medical_kpi_dashboard(data, title=None): st.info(f"Medical KPI Dashboard (mock): {title}")
 
+# Imports for Doctor's Prescription Page
+try:
+    from components.cards import PrescriptionCard
+except ImportError:
+    if "PrescriptionCard" not in globals(): # Check if already mocked by another page
+        def PrescriptionCard(prescription_data, actions, key): st.info(f"PrescriptionCard (mock) for {prescription_data.get('prescription_id')}")
+try:
+    from components.forms import PrescriptionMedicationComponent, PrescriptionLabTestComponent
+    # SearchFormComponent already imported/mocked
+except ImportError:
+    if "PrescriptionMedicationComponent" not in globals():
+        def PrescriptionMedicationComponent(current_medications, available_medications, key_prefix):
+            st.info("PrescriptionMedicationComponent (mock)")
+            return current_medications # Pass through for now
+    if "PrescriptionLabTestComponent" not in globals():
+        def PrescriptionLabTestComponent(current_lab_tests, available_lab_tests, key_prefix):
+            st.info("PrescriptionLabTestComponent (mock)")
+            return current_lab_tests # Pass through
+
+try:
+    from services.ai_service import AIAnalysisService, is_ai_available
+except ImportError:
+    if "AIAnalysisService" not in globals():
+        class AIAnalysisService: pass # Simple mock
+    if "is_ai_available" not in globals():
+        def is_ai_available(): return False # Default to false if service not there
+
+try:
+    from services.pdf_service import generate_prescription_pdf, get_pdf_filename, create_download_link
+except ImportError:
+    def generate_prescription_pdf(rx_data): st.info("generate_prescription_pdf (mock)"); return b"PDF_CONTENT_MOCK"
+    def get_pdf_filename(rx_data): return "mock_prescription.pdf"
+    def create_download_link(content, filename, label): st.info(f"Download link for {filename} (mock)")
+
 
 # Updated database queries import to include all necessary for SA Dashboard
 from database.queries import (
     DashboardQueries, TemplateQueries, VisitQueries, PatientQueries,
-    AnalyticsQueries, UserQueries, PrescriptionQueries, get_entity_counts
+    AnalyticsQueries, UserQueries, PrescriptionQueries, get_entity_counts,
+    MedicationQueries, LabTestQueries # Added for prescription page
 )
 # Updated formatters import
 from utils.formatters import format_date_display, format_time_display, format_percentage, format_currency, format_patient_name
 # from utils.helpers import show_error_message, show_success_message, show_warning_message # Assumed globally available
 from datetime import time # Added for _dtp_get_mock_patient_visits
+import copy # Added for _drtmpl_ functions
+
+# Imports for Doctor's Templates Page
+from config.settings import TEMPLATE_CONFIG # Added
+try:
+    from components.cards import TemplateCard
+except ImportError:
+    if "TemplateCard" not in globals(): # Check if already mocked
+        def TemplateCard(template_data, actions, key, show_confirm_delete=False): st.info(f"TemplateCard (mock) for {template_data.get('name')}")
+try:
+    from services.template_service import TemplateService
+except ImportError:
+    if "TemplateService" not in globals():
+        class TemplateService: # Basic mock
+            @staticmethod
+            def create_template(data, dr_id): return {"id": "mock_tmpl_new", **data}
+            @staticmethod
+            def update_template(t_id, data, dr_id): return {"id": t_id, **data}
+            @staticmethod
+            def delete_template(t_id, dr_id): return True
+# TemplateQueries already imported via Doctor Dashboard
+
+# Imports for Doctor's Medications Page
+from config.settings import DRUG_CLASSES # Added (ensure it's not duplicated if already there for other roles)
+# MedicationCard, SearchFormComponent, MedicationQueries are likely already handled or mocked.
 
 # Full-featured Doctor Dashboard (moved from pages/1_doctor_dashboard.py original spec)
 def render_doctor_dashboard_content_internal(current_user):
@@ -488,7 +551,13 @@ def run_app(): # Renamed main to run_app
         elif active_page_path == 'pages/8_assistant_dashboard.py':
             render_assistant_dashboard(current_user) # Call the new local function
         elif active_page_path == 'pages/14_super_admin_dashboard.py':
-            render_super_admin_dashboard(current_user) # Call the new local function
+            render_super_admin_dashboard(current_user)
+        elif active_page_path == 'pages/3_doctor_prescriptions.py':
+            render_doctor_prescriptions(current_user)
+        elif active_page_path == 'pages/4_doctor_templates.py':
+            render_doctor_templates(current_user)
+        elif active_page_path == 'pages/5_doctor_medications.py':
+            render_doctor_medications(current_user)
         # Add more elif conditions here as more pages are integrated
         else:
             st.error(f"Page not found: {active_page_path}")
@@ -719,6 +788,164 @@ def render_super_admin_dashboard(user: dict):
     _sa_render_dashboard_content(user)
 # --- Super Admin Dashboard End ---
 
+# --- Doctor's Prescriptions Page Start ---
+# Copied from pages/3_doctor_prescriptions.py and adapted
+
+def _drpres_get_mock_patients(query: str): # Prefixed
+    if not query: return []
+    return [
+        {'id': 'p001', 'first_name': 'John', 'last_name': 'Doe', 'dob': '1985-01-15', 'gender': 'Male', 'allergies': ['Peanuts'], 'conditions': ['Hypertension']},
+        {'id': 'p002', 'first_name': 'Jane', 'last_name': 'Smith', 'dob': '1992-07-22', 'gender': 'Female', 'allergies': [], 'conditions': ['Asthma', 'Migraine']},
+    ]
+
+def _drpres_get_mock_medications(query: str = ""): # Prefixed
+    meds = [
+        {'id': 'med001', 'name': 'Amoxicillin 250mg', 'category': 'Antibiotic'},
+        {'id': 'med002', 'name': 'Paracetamol 500mg', 'category': 'Analgesic'},
+        {'id': 'med003', 'name': 'Lisinopril 10mg', 'category': 'Antihypertensive'},
+    ]
+    if query:
+        return [m for m in meds if query.lower() in m['name'].lower()]
+    return meds
+
+def _drpres_get_mock_lab_tests(query: str = ""): # Prefixed
+    tests = [
+        {'id': 'lab001', 'name': 'Complete Blood Count (CBC)', 'category': 'Hematology'},
+        {'id': 'lab002', 'name': 'Lipid Panel', 'category': 'Chemistry'},
+        {'id': 'lab003', 'name': 'Urinalysis', 'category': 'Microbiology'},
+    ]
+    if query:
+        return [t for t in tests if query.lower() in t['name'].lower()]
+    return tests
+
+def _drpres_get_mock_prescriptions(query: str, doctor_id: str): # Prefixed
+    all_prescriptions = [
+        {'prescription_id': 'rx001', 'patient_name': 'John Doe', 'patient_id': 'p001', 'date_issued': '2023-10-01', 'status': 'Active', 'doctor_id': 'docRxMaster', 'medications': [{'name': 'Amoxicillin 250mg'}], 'lab_tests': []},
+        {'prescription_id': 'rx002', 'patient_name': 'Jane Smith', 'patient_id': 'p002', 'date_issued': '2023-09-15', 'status': 'Expired', 'doctor_id': 'docRxMaster', 'medications': [], 'lab_tests': [{'name': 'Lipid Panel'}]},
+    ]
+    doctor_prescriptions = [rx for rx in all_prescriptions if rx['doctor_id'] == doctor_id]
+    if not query: return doctor_prescriptions
+    query_lower = query.lower()
+    return [rx for rx in doctor_prescriptions if query_lower in rx['patient_name'].lower() or query_lower in rx['prescription_id'].lower()]
+
+def _drpres_handle_ai_analysis(medications, patient_context): # Prefixed
+    st.toast("🔬 AI Analysis triggered (placeholder). This may take a moment.")
+    st.info("AI Analysis Complete: No critical interactions found (mock response).")
+
+def _drpres_handle_save_prescription(prescription_data, medications, lab_tests, doctor): # Prefixed
+    # format_patient_name is globally available
+    patient_name = format_patient_name(st.session_state.selected_patient_for_rx.get('first_name','N/A'), st.session_state.selected_patient_for_rx.get('last_name',''))
+    try:
+        PrescriptionQueries.create_prescription(
+            patient_id=st.session_state.selected_patient_for_rx['id'], doctor_id=doctor['id'],
+            diagnosis=prescription_data['diagnosis'], chief_complaint=prescription_data['chief_complaint'],
+            notes=prescription_data['general_notes'], medications=medications, lab_tests=lab_tests
+        )
+        show_success_message(f"Prescription for {patient_name} saved successfully!")
+        st.session_state.rx_medications = []; st.session_state.rx_lab_tests = []
+        return True
+    except AttributeError:
+        st.warning(f"Prescription for {patient_name} submitted (mock save). DB integration pending.")
+        st.session_state.rx_medications = []; st.session_state.rx_lab_tests = []
+        return True
+    except Exception as e:
+        show_error_message(f"Failed to save prescription for {patient_name}: {e}")
+        return False
+
+def _drpres_handle_prescription_action(action: str, rx_data: dict): # Prefixed
+    st.toast(f"{action} for Prescription ID: {rx_data.get('prescription_id', 'N/A')} (placeholder).")
+    if action == "View PDF": st.info("PDF generation placeholder.")
+
+def _drpres_render_create_prescription_tab(doctor: dict): # Prefixed
+    st.subheader("⚕️ Create New Prescription")
+    st.markdown("#### 1. Select Patient")
+
+    try: patient_search_fn = PatientQueries.search_patients
+    except AttributeError: patient_search_fn = _drpres_get_mock_patients; st.warning("Patient search mock active.")
+
+    # SearchFormComponent is globally available or mocked
+    patient_search_form = SearchFormComponent(search_function=patient_search_fn, result_key_prefix="drpres_patient_search_", form_key="drpres_patient_search_form", placeholder="Search patient...", label="Find Patient")
+    selected_patient_id = patient_search_form.render()
+
+    if selected_patient_id and (not st.session_state.get('selected_patient_for_rx') or st.session_state.selected_patient_for_rx['id'] != selected_patient_id) :
+        try:
+            patient_data = PatientQueries.get_patient_details(selected_patient_id) if patient_search_fn != _drpres_get_mock_patients else next((p for p in _drpres_get_mock_patients("any") if p['id'] == selected_patient_id), None)
+            if patient_data: st.session_state.selected_patient_for_rx = patient_data; st.session_state.rx_medications = []; st.session_state.rx_lab_tests = []
+            else: show_error_message("Patient not found."); st.session_state.selected_patient_for_rx = None
+        except Exception as e: show_error_message(f"Error fetching patient: {e}"); st.session_state.selected_patient_for_rx = None
+
+    if st.session_state.get('selected_patient_for_rx'):
+        patient = st.session_state.selected_patient_for_rx
+        patient_name = format_patient_name(patient['first_name'], patient['last_name'])
+        st.success(f"Selected Patient: **{patient_name}** (ID: {patient['id']})")
+        if st.button("Clear Selected Patient", key="drpres_clear_patient_btn"):
+            st.session_state.selected_patient_for_rx = None; st.session_state.rx_medications = []; st.session_state.rx_lab_tests = []; st.rerun()
+
+        st.markdown("#### 2. Prescription Details")
+        with st.form("drpres_create_rx_form"):
+            chief_complaint = st.text_input("Chief Complaint", key="drpres_rx_chief")
+            diagnosis = st.text_area("Diagnosis", key="drpres_rx_diag")
+
+            try: available_meds = MedicationQueries.search_medications("")
+            except AttributeError: available_meds = _drpres_get_mock_medications(); st.warning("Medication search mock active.")
+            # PrescriptionMedicationComponent is globally available or mocked
+            med_component = PrescriptionMedicationComponent(st.session_state.get('rx_medications', []), available_meds, "drpres_rx_med")
+            st.session_state.rx_medications = med_component.render()
+
+            try: available_tests = LabTestQueries.search_lab_tests("")
+            except AttributeError: available_tests = _drpres_get_mock_lab_tests(); st.warning("Lab test search mock active.")
+            # PrescriptionLabTestComponent is globally available or mocked
+            test_component = PrescriptionLabTestComponent(st.session_state.get('rx_lab_tests', []), available_tests, "drpres_rx_lab")
+            st.session_state.rx_lab_tests = test_component.render()
+
+            general_notes = st.text_area("General Notes", key="drpres_rx_notes")
+
+            if is_ai_available() and st.form_submit_button("🔬 Analyze with AI (Beta)", use_container_width=False):
+                 _drpres_handle_ai_analysis(st.session_state.rx_medications, patient)
+
+            if st.form_submit_button("💾 Save Prescription", use_container_width=True):
+                if not chief_complaint or not diagnosis: show_error_message("Chief Complaint and Diagnosis are required.")
+                elif not st.session_state.rx_medications and not st.session_state.rx_lab_tests: show_error_message("Add medication or lab test.")
+                else:
+                    rx_data = {"chief_complaint": chief_complaint, "diagnosis": diagnosis, "general_notes": general_notes}
+                    if _drpres_handle_save_prescription(rx_data, st.session_state.rx_medications, st.session_state.rx_lab_tests, doctor): st.rerun()
+    else: st.info("Select a patient to create a prescription.")
+
+def _drpres_render_view_prescriptions_tab(doctor: dict): # Prefixed
+    st.subheader("📋 View Existing Prescriptions")
+    try: prescription_search_fn = lambda query: PrescriptionQueries.search_prescriptions(query, doctor_id=doctor['id'])
+    except AttributeError: prescription_search_fn = lambda query: _drpres_get_mock_prescriptions(query, doctor['id']); st.warning("Prescription search mock active.")
+
+    search_query_rx = st.text_input("Search by Patient Name, Rx ID...", key="drpres_rx_search_input")
+    if st.button("Search Prescriptions", key="drpres_rx_search_btn") or search_query_rx:
+        try: prescriptions = prescription_search_fn(search_query_rx)
+        except Exception as e: show_error_message(f"Error searching: {e}"); prescriptions = []
+        if not prescriptions: st.info(f"No prescriptions found for '{search_query_rx}'.")
+        else:
+            st.write(f"Found {len(prescriptions)} prescription(s):")
+            for idx, rx in enumerate(prescriptions):
+                actions = {"View PDF": lambda r=rx: _drpres_handle_prescription_action("View PDF", r), "Edit": lambda r=rx: _drpres_handle_prescription_action("Edit", r)}
+                # PrescriptionCard is globally available or mocked
+                try: PrescriptionCard(prescription_data=rx, actions=actions, key=f"drpres_rx_card_{rx.get('prescription_id', idx)}")
+                except Exception as e: st.error(f"Error rendering card: {e}")
+    else: st.info("Enter search terms to find prescriptions.")
+
+def render_doctor_prescriptions(user: dict): # Renamed from show_prescriptions_page
+    require_role_access([USER_ROLES['DOCTOR']])
+    # inject_css() # Global
+    st.markdown("<h1>📝 Prescription Management</h1>", unsafe_allow_html=True)
+    if not user: show_error_message("User info not found."); return
+
+    if 'selected_patient_for_rx' not in st.session_state: st.session_state.selected_patient_for_rx = None
+    if 'rx_medications' not in st.session_state: st.session_state.rx_medications = []
+    if 'rx_lab_tests' not in st.session_state: st.session_state.rx_lab_tests = []
+
+    tab_titles = ["➕ Create New Prescription", "📄 View Prescriptions"]
+    tab1, tab2 = st.tabs(tab_titles)
+    with tab1: _drpres_render_create_prescription_tab(user)
+    with tab2: _drpres_render_view_prescriptions_tab(user)
+# --- Doctor's Prescriptions Page End ---
+
 # --- Doctor's Today's Patients Page Start ---
 # Copied from pages/2_doctor_todays_patients.py and adapted
 
@@ -839,4 +1066,269 @@ def render_doctor_todays_patients(user: dict): # Renamed from show_todays_patien
         st.error("Could not retrieve doctor information. Please log in again.")
 # --- Doctor's Today's Patients Page End ---
 
-# Definition of show_login_page() MOVED HERE
+# --- Doctor's Templates Page Start ---
+# Copied from pages/4_doctor_templates.py and adapted
+
+_DRTMPL_MOCK_TEMPLATES_DB = []
+
+def _drtmpl_initialize_mock_db(): # Prefixed
+    global _DRTMPL_MOCK_TEMPLATES_DB # Use prefixed global
+    if not _DRTMPL_MOCK_TEMPLATES_DB:
+        _drtmpl_mock_create_template({"name": "Flu Follow-up", "category": "Follow-up", "diagnosis": "Influenza", "instructions": "Rest.", "medications": [], "lab_tests": []}, 'docTemplateUser', is_initial_setup=True)
+        _drtmpl_mock_create_template({"name": "Routine Physical", "category": "General", "diagnosis": "Health Maintenance", "instructions": "Yearly check.", "medications": [], "lab_tests": []}, 'docTemplateUser', is_initial_setup=True)
+
+def _drtmpl_get_mock_doctor_templates(doctor_id: str): # Prefixed
+    return [copy.deepcopy(t) for t in _DRTMPL_MOCK_TEMPLATES_DB if t['doctor_id'] == doctor_id]
+
+def _drtmpl_get_mock_template_by_id(template_id: str, doctor_id: str): # Prefixed
+    for t in _DRTMPL_MOCK_TEMPLATES_DB:
+        if t['id'] == template_id and t['doctor_id'] == doctor_id: return copy.deepcopy(t)
+    return None
+
+def _drtmpl_mock_create_template(data, doctor_id, is_initial_setup=False): # Prefixed
+    global _DRTMPL_MOCK_TEMPLATES_DB
+    new_id = f"tmpl_app_{len(_DRTMPL_MOCK_TEMPLATES_DB) + 1}"
+    new_template = {'id': new_id, 'doctor_id': doctor_id, **data, 'created_at': datetime.now().isoformat(), 'updated_at': datetime.now().isoformat()}
+    _DRTMPL_MOCK_TEMPLATES_DB.append(new_template)
+    if not is_initial_setup: show_success_message(f"Mock Template '{new_template['name']}' created.")
+    return new_template
+
+def _drtmpl_mock_update_template(template_id, data, doctor_id): # Prefixed
+    global _DRTMPL_MOCK_TEMPLATES_DB
+    for i, t in enumerate(_DRTMPL_MOCK_TEMPLATES_DB):
+        if t['id'] == template_id and t['doctor_id'] == doctor_id:
+            _DRTMPL_MOCK_TEMPLATES_DB[i] = {**t, **data, 'updated_at': datetime.now().isoformat()}; return _DRTMPL_MOCK_TEMPLATES_DB[i]
+    return None
+
+def _drtmpl_mock_delete_template(template_id, doctor_id): # Prefixed
+    global _DRTMPL_MOCK_TEMPLATES_DB
+    original_len = len(_DRTMPL_MOCK_TEMPLATES_DB)
+    _DRTMPL_MOCK_TEMPLATES_DB = [t for t in _DRTMPL_MOCK_TEMPLATES_DB if not (t['id'] == template_id and t['doctor_id'] == doctor_id)]
+    return len(_DRTMPL_MOCK_TEMPLATES_DB) < original_len
+
+def _drtmpl_handle_save_template(data, doctor_id): # Prefixed
+    try: template = TemplateService.create_template(data, doctor_id)
+    except AttributeError: template = _drtmpl_mock_create_template(data, doctor_id); show_warning_message("Template service mock active.")
+    except Exception as e: show_error_message(f"Error: {e}"); return
+    if template: show_success_message(f"Template '{template['name']}' created."); st.session_state.drtmpl_editing_template_id = None; st.session_state.drtmpl_template_form_data = {}; st.rerun()
+    else: show_error_message("Failed to create template.")
+
+def _drtmpl_handle_update_template(template_id, data, doctor_id): # Prefixed
+    try: template = TemplateService.update_template(template_id, data, doctor_id)
+    except AttributeError: template = _drtmpl_mock_update_template(template_id, data, doctor_id); show_warning_message("Template service mock active.")
+    except Exception as e: show_error_message(f"Error: {e}"); return
+    if template: show_success_message(f"Template '{template['name']}' updated."); st.session_state.drtmpl_editing_template_id = None; st.session_state.drtmpl_template_form_data = {}; st.rerun()
+    else: show_error_message("Failed to update template.")
+
+def _drtmpl_handle_delete_template(template_id, doctor_id): # Prefixed
+    confirm_key = f"drtmpl_confirm_delete_{template_id}"
+    if st.session_state.get(confirm_key):
+        try: success = TemplateService.delete_template(template_id, doctor_id)
+        except AttributeError: success = _drtmpl_mock_delete_template(template_id, doctor_id); show_warning_message("Template service mock active.")
+        except Exception as e: show_error_message(f"Error: {e}"); success = False
+        del st.session_state[confirm_key]
+        if success: show_success_message(f"Template ID {template_id} deleted."); st.rerun()
+        else: show_error_message("Failed to delete template.")
+    else: st.session_state[confirm_key] = True; show_warning_message(f"Confirm delete template ID {template_id}?"); st.rerun()
+
+def _drtmpl_handle_duplicate_template(template_id, doctor_id): # Prefixed
+    st.session_state.drtmpl_duplicating_template_id = template_id; st.rerun()
+
+def _drtmpl_process_duplication(original_template_id, new_name, doctor_id): # Prefixed
+    try:
+        original_template = TemplateQueries.get_template_details(original_template_id, doctor_id) if DB_QUERIES_AVAILABLE else _drtmpl_get_mock_template_by_id(original_template_id, doctor_id)
+        if not original_template: show_error_message("Original template not found."); return
+        duplicated_data = {k: v for k, v in original_template.items() if k not in ['id', 'created_at', 'updated_at', 'doctor_id']}
+        duplicated_data['name'] = new_name
+        try: new_template = TemplateService.create_template(duplicated_data, doctor_id)
+        except AttributeError: new_template = _drtmpl_mock_create_template(duplicated_data, doctor_id); show_warning_message("Template service mock active.")
+        if new_template: show_success_message(f"Template duplicated as '{new_name}'.")
+    except Exception as e: show_error_message(f"Error duplicating: {e}")
+    finally: st.session_state.drtmpl_duplicating_template_id = None; st.rerun()
+
+def _drtmpl_render_view_templates_section(doctor: dict): # Prefixed
+    st.subheader("My Templates")
+    if st.session_state.get('drtmpl_duplicating_template_id'):
+        orig_id = st.session_state.drtmpl_duplicating_template_id
+        orig_tmpl = TemplateQueries.get_template_details(orig_id, doctor['id']) if DB_QUERIES_AVAILABLE else _drtmpl_get_mock_template_by_id(orig_id, doctor['id'])
+        new_name_val = f"{orig_tmpl['name']} (Copy)" if orig_tmpl else "New Template Name"
+        st.text_input("Name for duplicated template:", value=new_name_val, key="drtmpl_new_template_name")
+        c1,c2 = st.columns(2)
+        if c1.button("✅ Confirm Duplicate", key="drtmpl_confirm_dup_btn"): _drtmpl_process_duplication(orig_id, st.session_state.drtmpl_new_template_name, doctor['id'])
+        if c2.button("❌ Cancel Duplicate", key="drtmpl_cancel_dup_btn"): st.session_state.drtmpl_duplicating_template_id = None; st.rerun()
+        return
+
+    if st.button("➕ Create New Template", key="drtmpl_create_new_btn"):
+        st.session_state.drtmpl_editing_template_id = 'new'
+        st.session_state.drtmpl_template_form_data = {"name": "", "category": TEMPLATE_CONFIG.get('CATEGORIES', ["General"])[0], "description": "", "diagnosis": "", "instructions": "", "medications": [], "lab_tests": []}
+        st.rerun()
+    st.markdown("---")
+
+    try: templates = TemplateQueries.get_doctor_templates(doctor['id'])
+    except AttributeError: templates = _drtmpl_get_mock_doctor_templates(doctor['id']); st.warning("Template query mock active.")
+    except Exception as e: show_error_message(f"Error fetching templates: {e}"); templates = []
+
+    if not templates: st.info("No templates created yet."); return
+    for tmpl in templates:
+        actions = {"Edit": lambda t=tmpl: _drtmpl_edit_template_action(t), "Delete": lambda t_id=tmpl['id']: _drtmpl_handle_delete_template(t_id, doctor['id']), "Duplicate": lambda t_id=tmpl['id']: _drtmpl_handle_duplicate_template(t_id, doctor['id'])}
+        confirm_del = bool(st.session_state.get(f"drtmpl_confirm_delete_{tmpl['id']}"))
+        try: TemplateCard(template_data=tmpl, actions=actions, key=f"drtmpl_card_{tmpl['id']}", show_confirm_delete=confirm_del)
+        except TypeError: TemplateCard(template_data=tmpl, actions=actions, key=f"drtmpl_card_{tmpl['id']}"); \
+                          if confirm_del: st.caption("Confirm Delete?")
+        except Exception as e: st.error(f"Error rendering card {tmpl.get('name')}: {e}")
+        st.markdown("---")
+
+def _drtmpl_edit_template_action(template_data): # Prefixed
+    st.session_state.drtmpl_editing_template_id = template_data['id']
+    st.session_state.drtmpl_template_form_data = copy.deepcopy(template_data)
+    if 'medications' not in st.session_state.drtmpl_template_form_data or st.session_state.drtmpl_template_form_data['medications'] is None: st.session_state.drtmpl_template_form_data['medications'] = []
+    if 'lab_tests' not in st.session_state.drtmpl_template_form_data or st.session_state.drtmpl_template_form_data['lab_tests'] is None: st.session_state.drtmpl_template_form_data['lab_tests'] = []
+    st.rerun()
+
+def _drtmpl_render_edit_template_section(doctor: dict): # Prefixed
+    form_data = st.session_state.drtmpl_template_form_data
+    is_new = st.session_state.drtmpl_editing_template_id == 'new'
+    st.subheader("Create New Template" if is_new else f"Edit Template: {form_data.get('name', '')}")
+
+    with st.form("drtmpl_template_form"):
+        form_data['name'] = st.text_input("Template Name", value=form_data.get('name', ''))
+        cats = TEMPLATE_CONFIG.get('CATEGORIES', ["General", "Follow-up"])
+        curr_cat = form_data.get('category', cats[0]); cat_idx = cats.index(curr_cat) if curr_cat in cats else 0
+        form_data['category'] = st.selectbox("Category", options=cats, index=cat_idx)
+        form_data['description'] = st.text_area("Description", value=form_data.get('description', ''))
+        form_data['diagnosis'] = st.text_area("Diagnosis", value=form_data.get('diagnosis', ''))
+        form_data['instructions'] = st.text_area("Instructions", value=form_data.get('instructions', ''))
+        if 'medications' not in form_data or not isinstance(form_data['medications'], list): form_data['medications'] = []
+        form_data['medications'] = st.data_editor(form_data['medications'], num_rows="dynamic", key="drtmpl_med_editor", column_config={"name":"Medication", "dosage":"Dosage", "frequency":"Frequency", "duration":"Duration"})
+        if 'lab_tests' not in form_data or not isinstance(form_data['lab_tests'], list): form_data['lab_tests'] = []
+        form_data['lab_tests'] = st.data_editor(form_data['lab_tests'], num_rows="dynamic", key="drtmpl_lab_editor", column_config={"name":"Test Name", "instructions":"Instructions"})
+
+        c1,c2=st.columns(2)
+        if c1.form_submit_button("Save Template" if is_new else "Update Template", use_container_width=True):
+            if not form_data['name']: show_error_message("Name is required.")
+            else:
+                if is_new: _drtmpl_handle_save_template(form_data, doctor['id'])
+                else: _drtmpl_handle_update_template(st.session_state.drtmpl_editing_template_id, form_data, doctor['id'])
+        if c2.form_submit_button("Cancel", type="secondary", use_container_width=True):
+            st.session_state.drtmpl_editing_template_id = None; st.session_state.drtmpl_template_form_data = {}; st.rerun()
+
+def render_doctor_templates(user: dict): # Renamed from show_templates_page
+    require_role_access([USER_ROLES['DOCTOR']])
+    # inject_css() # Global
+    st.markdown("<h1>📋 Prescription Templates</h1>", unsafe_allow_html=True)
+    if not user: show_error_message("User info not found."); return
+
+    # Initialize session state keys specific to this page, prefixed
+    for key, default_val in [('drtmpl_editing_template_id', None), ('drtmpl_template_form_data', {}), ('drtmpl_duplicating_template_id', None)]:
+        if key not in st.session_state: st.session_state[key] = default_val
+
+    # Initialize mock DB for templates if not using real queries
+    if not DB_QUERIES_AVAILABLE or not hasattr(TemplateQueries, 'get_doctor_templates'): _drtmpl_initialize_mock_db()
+
+
+    if st.session_state.drtmpl_editing_template_id is not None: _drtmpl_render_edit_template_section(user)
+    else: _drtmpl_render_view_templates_section(user)
+# --- Doctor's Templates Page End ---
+
+# --- Doctor's Medications Page Start ---
+# Copied from pages/5_doctor_medications.py and adapted
+
+_DRMED_MOCK_MEDICATIONS_DB = [ # Prefixed global mock DB
+    {'id': 'med001', 'name': 'Amoxicillin 250mg', 'generic_name': 'Amoxicillin', 'drug_class': 'Penicillin Antibiotics', 'form': 'Capsule', 'strength': '250mg', 'manufacturer': 'Generic Pharma', 'indications': ['Bacterial infections'], 'contraindications': ['Penicillin allergy'], 'is_otc': False, 'storage_conditions': 'Room temperature', 'notes': 'Complete full course.', 'created_by': 'system'},
+    {'id': 'med002', 'name': 'Paracetamol 500mg', 'generic_name': 'Acetaminophen', 'drug_class': 'Analgesics', 'form': 'Tablet', 'strength': '500mg', 'manufacturer': 'HealthWell', 'indications': ['Pain relief', 'Fever reduction'], 'contraindications': ['Severe liver disease'], 'is_otc': True, 'storage_conditions': 'Room temperature', 'notes': 'Max 4g/day.', 'created_by': 'system'},
+    # Add more from original file if needed, this is just a sample
+]
+_DRMED_MOCK_FAVORITE_MEDS = {} # doctor_id: {med_id1, med_id2}
+
+def _drmed_get_mock_medications(search_term: str, drug_class: str, favorites_only: bool, doctor_id: str): # Prefixed
+    results = copy.deepcopy(_DRMED_MOCK_MEDICATIONS_DB)
+    doctor_favorites = _DRMED_MOCK_FAVORITE_MEDS.get(doctor_id, set())
+    if search_term:
+        search_term_lower = search_term.lower()
+        results = [m for m in results if search_term_lower in m['name'].lower() or search_term_lower in m.get('generic_name','').lower()]
+    if drug_class != "All": results = [m for m in results if m.get('drug_class') == drug_class]
+    for med in results: med['is_favorite'] = med['id'] in doctor_favorites
+    if favorites_only: results = [m for m in results if m['is_favorite']]
+    return results
+
+def _drmed_mock_toggle_favorite_medication(medication_id: str, doctor_id: str): # Prefixed
+    if doctor_id not in _DRMED_MOCK_FAVORITE_MEDS: _DRMED_MOCK_FAVORITE_MEDS[doctor_id] = set()
+    is_currently_favorite = medication_id in _DRMED_MOCK_FAVORITE_MEDS[doctor_id]
+    if is_currently_favorite: _DRMED_MOCK_FAVORITE_MEDS[doctor_id].remove(medication_id); return False
+    else: _DRMED_MOCK_FAVORITE_MEDS[doctor_id].add(medication_id); return True
+
+def _drmed_handle_toggle_favorite(medication_id: str, doctor_id: str, is_currently_favorite: bool): # Prefixed
+    try:
+        new_fav_status = MedicationQueries.toggle_favorite_medication(medication_id, doctor_id, not is_currently_favorite) if DB_QUERIES_AVAILABLE else _drmed_mock_toggle_favorite_medication(medication_id, doctor_id)
+        action = "added to" if new_fav_status else "removed from"
+        show_success_message(f"Medication {action} favorites.")
+    except AttributeError: # Fallback for mock if toggle_favorite_medication doesn't take 3 args
+        new_fav_status = _drmed_mock_toggle_favorite_medication(medication_id, doctor_id)
+        action = "added to" if new_fav_status else "removed from"
+        show_warning_message(f"Medication {action} favorites (mock toggle).")
+    except Exception as e: show_error_message(f"Error updating favorite status: {e}")
+    st.rerun()
+
+def _drmed_render_medication_search_and_filters(): # Prefixed
+    st.subheader("🔍 Search & Filter Medications")
+    # Use a unique key for session state to avoid conflicts if other pages use similar names
+    st.session_state.drmed_search_term = st.text_input("Search by Name or Generic Name:", value=st.session_state.get('drmed_search_term', ""), key="drmed_search_input")
+
+    filter_cols = st.columns([2, 1, 1])
+    with filter_cols[0]:
+        available_drug_classes = DRUG_CLASSES if isinstance(DRUG_CLASSES, list) and DRUG_CLASSES else ["Analgesics", "Other"]
+        all_drug_classes_options = ["All"] + sorted(list(set(available_drug_classes)))
+        current_drug_class = st.session_state.get('drmed_drug_class', "All")
+        idx = all_drug_classes_options.index(current_drug_class) if current_drug_class in all_drug_classes_options else 0
+        st.session_state.drmed_drug_class = st.selectbox("Filter by Drug Class:", options=all_drug_classes_options, index=idx, key="drmed_drug_class_filter")
+    with filter_cols[1]:
+        st.session_state.drmed_show_favorites = st.checkbox("Show Only My Favorites ⭐", value=st.session_state.get('drmed_show_favorites', False), key="drmed_favorites_filter")
+    with filter_cols[2]:
+        st.markdown("<div>&nbsp;</div>", unsafe_allow_html=True)
+        if st.button("🔄 Refresh / Apply", key="drmed_refresh_btn", use_container_width=True): st.rerun()
+    st.markdown("---")
+
+def _drmed_render_medications_list(doctor: dict): # Prefixed
+    st.subheader("Medication Listings")
+    search_term = st.session_state.get('drmed_search_term', "")
+    drug_class_filter = st.session_state.get('drmed_drug_class', "All")
+    favorites_only_filter = st.session_state.get('drmed_show_favorites', False)
+
+    try:
+        medications_list = MedicationQueries.search_medications(search_term=search_term, drug_class=drug_class_filter if drug_class_filter != "All" else None, favorites_only=favorites_only_filter, doctor_id=doctor['id'])
+    except AttributeError:
+        st.warning("Medication query service mock active.")
+        medications_list = _drmed_get_mock_medications(search_term, drug_class_filter, favorites_only_filter, doctor['id'])
+    except Exception as e: show_error_message(f"Error fetching medications: {e}"); medications_list = []
+
+    if not medications_list: st.info("No medications found matching your criteria."); return
+    num_columns = 3; item_cols = st.columns(num_columns)
+    for i, med_item_data in enumerate(medications_list):
+        with item_cols[i % num_columns]:
+            is_fav = med_item_data.get('is_favorite', False)
+            fav_label = "🌟 Unfavorite" if is_fav else "⭐ Favorite"
+            card_actions = {fav_label: lambda m_id=med_item_data['id'], d_id=doctor['id'], current_fav=is_fav: _drmed_handle_toggle_favorite(m_id, d_id, current_fav),
+                            "View Details": lambda m_name=med_item_data['name']: st.toast(f"Details for {m_name} (placeholder).")}
+            try: MedicationCard(medication_data=med_item_data, actions=card_actions, key=f"drmed_card_{med_item_data['id']}")
+            except Exception as e: st.error(f"Error rendering card for {med_item_data.get('name')}: {e}")
+
+def render_doctor_medications(user: dict): # Renamed from show_medications_page
+    require_role_access([USER_ROLES['DOCTOR']])
+    # inject_css() # Global
+    st.markdown("<h1>💊 Medications Database</h1>", unsafe_allow_html=True)
+
+    # Initialize session state keys specific to this page
+    for key, default_val in [('drmed_search_term', ""), ('drmed_drug_class', "All"), ('drmed_show_favorites', False)]:
+        if key not in st.session_state: st.session_state[key] = default_val
+
+    # Initialize mock favorites if needed
+    if not DB_QUERIES_AVAILABLE or not hasattr(MedicationQueries, 'toggle_favorite_medication'):
+        global _DRMED_MOCK_FAVORITE_MEDS # Ensure it's accessible for the init
+        if user['id'] not in _DRMED_MOCK_FAVORITE_MEDS: _DRMED_MOCK_FAVORITE_MEDS[user['id']] = set()
+        # Example: _drmed_mock_toggle_favorite_medication('med001', user['id']) # Add a default favorite for testing
+
+    _drmed_render_medication_search_and_filters()
+    _drmed_render_medications_list(user)
+# --- Doctor's Medications Page End ---
+
+# --- Doctor's Today's Patients Page Start ---
